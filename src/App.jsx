@@ -11,6 +11,10 @@ import Resources from './pages/Resources';
 import Upload from './pages/Upload';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import Contact from './pages/Contact';
+import About from './pages/About';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -80,6 +84,10 @@ function AppContent() {
               <AdminPanel />
             </AdminRoute>
           } />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </main>
       <Footer />

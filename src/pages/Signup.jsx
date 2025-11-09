@@ -59,64 +59,61 @@ const Signup = () => {
   };
 
   const jnuSchools = [
-    // Schools
-    'School of Computational and Integrative Sciences',
-    'School of Computer and Systems Sciences',
-    'School of Environmental Sciences',
-    'School of International Studies',
-    'School of Language Literature and Culture Studies',
-    'School of Life Sciences',
-    'School of Physical Sciences',
-    'School of Social Sciences',
-    
-    // International Studies Centres
     'Centre for African Studies',
     'Centre for Canadian, US and Latin American Studies',
+    'Centre for Chinese and South East Asian Studies',
     'Centre for Comparative Politics and Political Theory',
     'Centre for East Asian Studies',
+    'Centre for Economic Studies and Planning',
+    'Centre for English Studies',
     'Centre for European Studies',
+    'Centre for French and Francophone Studies',
+    'Centre for Historical Studies',
     'Centre for Indo-Pacific Studies',
     'Centre for Inner Asian Studies',
     'Centre for International Legal Studies',
     'Centre for International Politics, Organisation and Disarmament',
     'Centre for International Trade and Development',
-    'Centre for Russian and Central Asian Studies',
-    'Centre for South Asian Studies',
-    'Centre for West Asian Studies',
-    
-    // Language, Literature and Culture Studies Centres
-    'Centre of Arabic and African studies',
-    'Centre for Chinese and South East Asian Studies',
-    'Centre for English Studies',
-    'Centre for French and Francophone Studies',
-    'Centre of German Studies',
-    'Centre of Indian Languages',
     'Centre for Japanese Studies',
     'Centre for Korean Studies',
     'Centre for Linguistics',
-    'Centre of Persian and Central Asian Studies',
-    'Centre of Russian Studies',
-    'Centre of Spanish, Portuguese, Italian & Latin American',
-    
-    // Social Sciences Centres
-    'Centre for Economic Studies and Planning',
     'Centre for Media Studies',
+    'Centre for North-East Studies',
     'Centre for Philosophy',
     'Centre for Political Studies',
+    'Centre for Russian and Central Asian Studies',
+    'Centre for South Asian Studies',
     'Centre for Studies in Science Policy',
-    'Centre for Women\'s Studies',
     'Centre for the Study of Discrimination and Exclusion',
+    'Centre for the Study of Law and Governance',
     'Centre for the Study of Regional Development',
     'Centre for the Study of Social Systems',
+    'Centre for West Asian Studies',
+    'Centre for Women\'s Studies',
+    'Centre of Arabic and African studies',
+    'Centre of German Studies',
+    'Centre of Indian Languages',
+    'Centre of Persian and Central Asian Studies',
+    'Centre of Russian Studies',
     'Centre of Social Medicine and Community Health',
-    'Zakir Husain Centre for Educational Studies',
-    'Centre for the Study of Law and Governance',
-    
-    // Special Centres
+    'Centre of Spanish, Portuguese, Italian & Latin American',
+    'Chattarpati Shivaji Maharaj Centre for Security and Strategic Studies',
+    'School of Computational and Integrative Sciences',
+    'School of Computer and Systems Sciences',
+    'School of Engineering',
+    'School of Environmental Sciences',
+    'School of International Studies',
+    'School of Language Literature and Culture Studies',
+    'School of Life Sciences',
+    'School of Physical Sciences',
+    'School of Sanskrit and Indic Studies',
+    'School of Social Sciences',
     'Special Centre for Molecular Medicine',
     'Special Centre for Nanoscience',
-    'Special Centre for Sanskrit Studies'
-  ];
+    'Special Centre for National Security Studies',
+    'Special Centre for Tamil Studies',
+    'Zakir Husain Centre for Educational Studies'
+  ].sort();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -178,7 +175,7 @@ const Signup = () => {
 
             <div>
               <label htmlFor="school" className="block text-sm font-medium text-gray-700 mb-1">
-                School
+                School/Centre
               </label>
               <select
                 id="school"
@@ -188,7 +185,7 @@ const Signup = () => {
                 value={formData.school}
                 onChange={handleChange}
               >
-                <option value="">Select your school</option>
+                <option value="">Select your school/Centre</option>
                 {jnuSchools.map((school) => (
                   <option key={school} value={school}>
                     {school}
