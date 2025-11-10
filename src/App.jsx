@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
 import Navbar from './components/Navbar';
@@ -51,6 +51,12 @@ const AdminRoute = ({ children }) => {
 };
 
 function AppContent() {
+  const location = useLocation();
+  
+  // Routes that should NOT show the large footer (they have their own footer)
+  const dashboardRoutes = ['/dashboard', '/admin', '/resources', '/upload', '/profile'];
+  const showLargeFooter = !dashboardRoutes.includes(location.pathname);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -90,7 +96,7 @@ function AppContent() {
           <Route path="/about" element={<About />} />
         </Routes>
       </main>
-      <Footer />
+      {showLargeFooter && <Footer />}
     </div>
   );
 }

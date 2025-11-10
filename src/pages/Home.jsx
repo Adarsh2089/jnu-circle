@@ -1,8 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Upload, Shield, Star, Users, Award } from 'lucide-react';
 import AdSlot from '../components/AdSlot';
+import { useAuth } from '../contexts/AuthContext';
 
 const Home = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetStarted = (e) => {
+    if (user) {
+      e.preventDefault();
+      navigate('/dashboard');
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -16,7 +27,11 @@ const Home = () => {
               Your Central Hub for PYQs, Notes & Study Materials
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg text-lg transition-all shadow-lg">
+              <Link 
+                to={user ? "/dashboard" : "/signup"} 
+                onClick={handleGetStarted}
+                className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg text-lg transition-all shadow-lg"
+              >
                 Get Started Free
               </Link>
               <Link to="/resources" className="bg-primary-700 hover:bg-primary-800 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-all">
@@ -180,7 +195,11 @@ const Home = () => {
                     No contribution required
                   </li>
                 </ul>
-                <Link to="/signup" className="btn-primary w-full">
+                <Link 
+                  to={user ? "/dashboard" : "/signup"} 
+                  onClick={handleGetStarted}
+                  className="btn-primary w-full"
+                >
                   Get Premium
                 </Link>
               </div>
@@ -201,7 +220,11 @@ const Home = () => {
           <p className="text-xl mb-8">
             Join thousands of JNU students already using JNU Circle
           </p>
-          <Link to="/signup" className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg text-lg transition-all shadow-lg inline-block">
+          <Link 
+            to={user ? "/dashboard" : "/signup"} 
+            onClick={handleGetStarted}
+            className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg text-lg transition-all shadow-lg inline-block"
+          >
             Sign Up Now
           </Link>
         </div>

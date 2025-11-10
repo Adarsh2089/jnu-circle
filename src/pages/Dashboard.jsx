@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Upload, BookOpen, Award, TrendingUp } from 'lucide-react';
 import AdSlot from '../components/AdSlot';
 import SecureViewer from '../components/SecureViewer';
+import DashboardFooter from '../components/DashboardFooter';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -76,8 +77,9 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {userProfile?.fullName || 'Student'}!
@@ -259,7 +261,11 @@ const Dashboard = () => {
         <div className="mt-8">
           <AdSlot slot="horizontal" />
         </div>
+        </div>
       </div>
+
+      {/* Minimal Footer */}
+      <DashboardFooter />
 
       {/* Secure Viewer Modal */}
       {selectedResource && (

@@ -1,13 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
-import { BookOpen, LogOut, User, Menu, X, Shield } from 'lucide-react';
+import { BookOpen, LogOut, User, Menu, X, Shield, Home } from 'lucide-react';
 import { useState } from 'react';
 
 const Navbar = () => {
   const { user, userProfile, logout } = useAuth();
   const { isAdmin } = useAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   const handleLogout = async () => {
     try {
@@ -32,25 +34,37 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </Link>
-                {!isAdmin && (
-                  <>
-                    <Link to="/resources" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                      Resources
-                    </Link>
-                  </>
+                {/* Show Dashboard only if not on home page */}
+                {!isHomePage && (
+                  <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                    Dashboard
+                  </Link>
                 )}
-                <Link to="/upload" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Upload
-                </Link>
-                {!isAdmin && (
+                {/* Show Resources only if not on home page and not admin */}
+                {!isHomePage && !isAdmin && (
+                  <Link to="/resources" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                    Resources
+                  </Link>
+                )}
+                {/* Show Upload only if not on home page */}
+                {!isHomePage && (
+                  <Link to="/upload" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                    Upload
+                  </Link>
+                )}
+                {/* Show Profile only if not on home page and not admin */}
+                {!isHomePage && !isAdmin && (
                   <Link to="/profile" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                     Profile
                   </Link>
                 )}
-                {userProfile?.isPremium && (
+                {/* Show Get Started button on home page */}
+                {isHomePage && (
+                  <Link to="/dashboard" className="btn-primary">
+                    Go to Dashboard
+                  </Link>
+                )}
+                {userProfile?.isPremium && !isHomePage && (
                   <span className="bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold">
                     Premium
                   </span>
@@ -93,37 +107,49 @@ const Navbar = () => {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {user ? (
               <>
-                <Link 
-                  to="/dashboard" 
-                  className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                {!isAdmin && (
+                {isHomePage ? (
                   <Link 
-                    to="/resources" 
-                    className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
+                    to="/dashboard" 
+                    className="block text-white bg-primary-600 hover:bg-primary-700 px-3 py-2 rounded-md text-center font-medium"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Resources
+                    Go to Dashboard
                   </Link>
-                )}
-                <Link 
-                  to="/upload" 
-                  className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Upload
-                </Link>
-                {!isAdmin && (
-                  <Link 
-                    to="/profile" 
-                    className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Profile
-                  </Link>
+                ) : (
+                  <>
+                    <Link 
+                      to="/dashboard" 
+                      className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    {!isAdmin && (
+                      <Link 
+                        to="/resources" 
+                        className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Resources
+                      </Link>
+                    )}
+                    <Link 
+                      to="/upload" 
+                      className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Upload
+                    </Link>
+                    {!isAdmin && (
+                      <Link 
+                        to="/profile" 
+                        className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                    )}
+                  </>
                 )}
                 <button
                   onClick={() => {

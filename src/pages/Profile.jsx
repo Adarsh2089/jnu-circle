@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import DashboardFooter from '../components/DashboardFooter';
 
 const Profile = () => {
   const { user, userProfile } = useAuth();
@@ -83,8 +84,9 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Profile Card */}
         <div className="card mb-6">
           <div className="flex items-start justify-between mb-6">
@@ -282,7 +284,11 @@ const Profile = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
+
+      {/* Minimal Footer */}
+      <DashboardFooter />
     </div>
   );
 };

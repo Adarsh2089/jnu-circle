@@ -6,6 +6,7 @@ import { Search, Filter, Eye, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdSlot from '../components/AdSlot';
 import SecureViewer from '../components/SecureViewer';
+import DashboardFooter from '../components/DashboardFooter';
 
 const Resources = () => {
   const [resources, setResources] = useState([]);
@@ -146,8 +147,9 @@ const Resources = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Browse Resources</h1>
           <p className="text-gray-600 mt-2">
@@ -229,16 +231,6 @@ const Resources = () => {
                 <option value="other">Other</option>
               </select>
             </div>
-
-            <div>
-              <input
-                type="text"
-                placeholder="Filter by school..."
-                className="input-field"
-                value={filterSchool === 'all' ? '' : filterSchool}
-                onChange={(e) => setFilterSchool(e.target.value || 'all')}
-              />
-            </div>
           </div>
         </div>
 
@@ -307,7 +299,11 @@ const Resources = () => {
         <div className="mt-8">
           <AdSlot slot="horizontal" />
         </div>
+        </div>
       </div>
+
+      {/* Minimal Footer */}
+      <DashboardFooter />
 
       {/* Secure Viewer Modal */}
       {selectedResource && (

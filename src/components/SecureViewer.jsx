@@ -1,13 +1,55 @@
 import { useEffect, useState, useRef } from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, updateDoc, increment, arrayUnion, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import PDFViewer from './PDFViewer';
 
 const SecureViewer = ({ resource, onClose }) => {
   const { user, userProfile } = useAuth();
   const [watermarkText, setWatermarkText] = useState('');
+  const [scale, setScale] = useState(1); // Start at 100%
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const hasTrackedView = useRef(false);
+  const iframeRef = useRef(null);
+  const containerRef = useRef(null);
+  const viewerRef = useRef(null);
+
+  // Zoom functions
+  const zoomIn = () => {
+    setScale(prev => Math.min(3, prev + 0.25)); // Max 300%
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(0.5, prev - 0.25)); // Min 50%
+  };
+
+  const resetZoom = () => {
+    setScale(1); // Reset to 100%
+  };
+
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      viewerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Generate watermark with user info and timestamp
@@ -76,10 +118,22 @@ const SecureViewer = ({ resource, onClose }) => {
 
     trackView();
 
-    // Disable right-click
+    // Disable right-click - aggressive capture at document level
     const handleContextMenu = (e) => {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       return false;
+    };
+    
+    // Block right mouse button at the earliest phase
+    const blockRightClick = (e) => {
+      if (e.button === 2) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+      }
     };
 
     // Disable keyboard shortcuts for save/print
@@ -104,16 +158,71 @@ const SecureViewer = ({ resource, onClose }) => {
       document.head.appendChild(style);
     };
 
-    document.addEventListener('contextmenu', handleContextMenu);
+    // Add right-click handler to iframe when it loads
+    const handleIframeLoad = () => {
+      if (iframeRef.current) {
+        try {
+          // Try to add context menu handler to iframe content
+          const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+          if (iframeDoc) {
+            iframeDoc.addEventListener('contextmenu', handleContextMenu);
+          }
+        } catch (e) {
+          // Cross-origin restriction - expected for external PDFs
+          console.log('Cannot access iframe content (expected for external URLs)');
+        }
+      }
+    };
+
+    // Add event listeners with capture phase (runs BEFORE bubble phase)
+    document.addEventListener('contextmenu', handleContextMenu, true); // Capture phase
+    document.addEventListener('mousedown', blockRightClick, true); // Capture phase  
+    document.addEventListener('mouseup', blockRightClick, true); // Capture phase
     document.addEventListener('keydown', handleKeyDown);
     disablePrint();
 
+    // Add listener to iframe
+    if (iframeRef.current) {
+      iframeRef.current.addEventListener('load', handleIframeLoad);
+    }
+
+    // Hide PDF toolbar using CSS injection (for browsers that support it)
+    const hidePdfToolbar = () => {
+      const style = document.createElement('style');
+      style.id = 'hide-pdf-toolbar';
+      style.innerHTML = `
+        /* Hide PDF.js toolbar if present */
+        #toolbarContainer, .toolbar, [role="toolbar"] {
+          display: none !important;
+        }
+        /* Hide download and print buttons */
+        #download, #print, .download, .print, 
+        button[title*="Download"], button[title*="Print"],
+        button[title*="download"], button[title*="print"] {
+          display: none !important;
+        }
+      `;
+      document.head.appendChild(style);
+    };
+
+    hidePdfToolbar();
+
+    // Add event listeners with capture phase to block right-click
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('mousedown', blockRightClick, true);
+    document.addEventListener('mouseup', blockRightClick, true);
+    document.addEventListener('keydown', handleKeyDown);
+
     // Cleanup
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('mousedown', blockRightClick, true);
+      document.removeEventListener('mouseup', blockRightClick, true);
       document.removeEventListener('keydown', handleKeyDown);
       const printStyle = document.getElementById('no-print-style');
+      const toolbarStyle = document.getElementById('hide-pdf-toolbar');
       if (printStyle) printStyle.remove();
+      if (toolbarStyle) toolbarStyle.remove();
     };
   }, []); // Empty dependency array - only run once on mount
 
@@ -128,16 +237,30 @@ const SecureViewer = ({ resource, onClose }) => {
 
   const fileType = getFileType(resource.fileUrl);
 
-  // For PDFs, use PDF.js viewer with disabled features
+  // For PDFs, use direct browser viewer with zoom enabled and toolbar hidden
   const getPdfViewerUrl = (url) => {
-    // Using Mozilla's PDF.js viewer with disabled features
-    return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}#pagemode=none&toolbar=0`;
+    // Return URL with parameters: hide toolbar, load at 100%, enable zoom
+    return `${url}#toolbar=0&navpanes=0&scrollbar=1&zoom=100`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
+    <div 
+      ref={viewerRef}
+      className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col"
+      style={{ 
+        userSelect: 'none', 
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}
+      onContextMenu={(e) => { e.preventDefault(); return false; }}
+    >
       {/* Header */}
-      <div className="bg-gray-900 text-white p-4 flex items-center justify-between">
+      <div 
+        className="bg-gray-900 text-white p-4 flex items-center justify-between"
+        style={{ touchAction: 'none' }} // Disable touch zoom on header
+        onContextMenu={(e) => { e.preventDefault(); return false; }}
+      >
         <div className="flex-1">
           <h2 className="text-xl font-bold">{resource.title}</h2>
           <p className="text-sm text-gray-400 mt-1">
@@ -152,44 +275,93 @@ const SecureViewer = ({ resource, onClose }) => {
         </button>
       </div>
 
-      {/* Security Notice */}
-      <div className="bg-yellow-900 bg-opacity-50 text-yellow-200 px-4 py-2 flex items-center text-sm">
-        <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-        <span>
-          Protected Content: Download, print, and copy functions are disabled. 
-          This viewing session is tracked.
-        </span>
+      {/* Security Notice with Zoom Controls */}
+      <div 
+        className="bg-yellow-900 bg-opacity-50 text-yellow-200 px-4 py-2 flex items-center justify-between text-sm"
+        style={{ touchAction: 'none' }} // Disable touch zoom on notice bar
+        onContextMenu={(e) => { e.preventDefault(); return false; }}
+      >
+        <div className="flex items-center">
+          <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span>
+            Protected Content: Download, print, and copy functions are disabled. 
+            This viewing session is tracked.
+          </span>
+        </div>
+        
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={zoomOut}
+            disabled={scale <= 0.5}
+            className="p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+            title="Zoom Out (25%)"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={resetZoom}
+            className="px-3 py-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors font-semibold"
+            title="Reset to 100%"
+          >
+            {Math.round(scale * 100)}%
+          </button>
+          
+          <button
+            onClick={zoomIn}
+            disabled={scale >= 3}
+            className="p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+            title="Zoom In (25%)"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+
+          {/* Fullscreen Button */}
+          <button
+            onClick={toggleFullscreen}
+            className="p-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors ml-2"
+            title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen"}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Viewer Container */}
-      <div className="flex-1 relative overflow-hidden select-none">
-        {/* Multiple Watermarks */}
-        <div className="absolute inset-0 pointer-events-none z-10">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute text-gray-500 text-opacity-20 text-xs font-bold transform rotate-[-45deg] whitespace-nowrap"
-              style={{
-                top: `${(i % 5) * 20 + 10}%`,
-                left: `${Math.floor(i / 5) * 25 + 5}%`,
-                userSelect: 'none',
-                pointerEvents: 'none'
-              }}
-            >
-              {watermarkText}
-            </div>
-          ))}
-        </div>
+      <div 
+        ref={containerRef}
+        className="flex-1 relative overflow-auto select-none"
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
+        onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); return false; }}}
+        onMouseUp={(e) => { if (e.button === 2) { e.preventDefault(); e.stopPropagation(); return false; }}}
+        style={{ 
+          backgroundColor: '#111',
+          overflowX: 'auto',
+          overflowY: 'auto'
+        }}
+      >
 
         {/* File Viewer */}
-        <div className="w-full h-full">
+        <div 
+          className="w-full h-full" 
+          style={{ 
+            userSelect: 'none', 
+            touchAction: 'pan-y pinch-zoom', // Enable scroll and pinch zoom ONLY on content
+            transform: `scale(${scale})`,
+            transformOrigin: 'top center',
+            transition: 'transform 0.2s ease-out',
+            minHeight: '100%',
+            width: scale > 1 ? `${scale * 100}%` : '100%' // Expand width when zoomed
+          }}
+          onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); return false; }}
+          onMouseDown={(e) => { if (e.button === 2) { e.preventDefault(); return false; } }}
+        >
           {fileType === 'pdf' ? (
-            <iframe
-              src={getPdfViewerUrl(resource.fileUrl)}
-              className="w-full h-full border-0"
-              title={resource.title}
-              sandbox="allow-scripts allow-same-origin"
-              onContextMenu={(e) => e.preventDefault()}
+            <PDFViewer 
+              url={resource.fileUrl} 
+              scale={scale} 
+              watermarkText={watermarkText}
             />
           ) : fileType === 'image' ? (
             <div className="w-full h-full flex items-center justify-center bg-gray-900 p-4">

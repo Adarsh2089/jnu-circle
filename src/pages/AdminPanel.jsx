@@ -4,6 +4,7 @@ import { db } from '../config/firebase';
 import { useAdmin } from '../contexts/AdminContext';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Eye, Trash2, Filter, Search, Users, FileText } from 'lucide-react';
+import DashboardFooter from '../components/DashboardFooter';
 
 const AdminPanel = () => {
   // Tab state
@@ -306,8 +307,9 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">Manage users and content</p>
@@ -691,7 +693,11 @@ const AdminPanel = () => {
             )}
           </>
         )}
+        </div>
       </div>
+
+      {/* Minimal Footer */}
+      <DashboardFooter />
     </div>
   );
 };

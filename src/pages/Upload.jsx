@@ -6,6 +6,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Upload as UploadIcon, FileText, CheckCircle } from 'lucide-react';
 import UploadSuccessModal from '../components/UploadSuccessModal';
+import DashboardFooter from '../components/DashboardFooter';
 
 const Upload = () => {
   const { user, userProfile } = useAuth();
@@ -161,8 +162,9 @@ const Upload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex-1 py-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Upload Resource</h1>
           <p className="text-gray-600 mt-2">
@@ -394,7 +396,11 @@ const Upload = () => {
             </div>
           </form>
         </div>
+        </div>
       </div>
+
+      {/* Minimal Footer */}
+      <DashboardFooter />
 
       {/* Success Modal Overlay */}
       {success && (
