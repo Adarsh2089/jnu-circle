@@ -11,6 +11,8 @@ import Resources from './pages/Resources';
 import Upload from './pages/Upload';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
+import SchoolAdminPanel from './pages/SchoolAdminPanel';
+import CentreAdminPanel from './pages/CentreAdminPanel';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import Contact from './pages/Contact';
@@ -50,11 +52,49 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// School Admin Route Component
+const SchoolAdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  const { isSchoolAdmin } = useAdmin();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  if (!user) return <Navigate to="/login" />;
+  if (!isSchoolAdmin) return <Navigate to="/dashboard" />;
+  
+  return children;
+};
+
+// Centre Admin Route Component
+const CentreAdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  const { isCentreAdmin } = useAdmin();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+  
+  if (!user) return <Navigate to="/login" />;
+  if (!isCentreAdmin) return <Navigate to="/dashboard" />;
+  
+  return children;
+};
+
 function AppContent() {
   const location = useLocation();
   
   // Routes that should NOT show the large footer (they have their own footer)
-  const dashboardRoutes = ['/dashboard', '/admin', '/resources', '/upload', '/profile'];
+  const dashboardRoutes = ['/dashboard', '/admin', '/school-admin', '/centre-admin', '/resources', '/upload', '/profile'];
   const showLargeFooter = !dashboardRoutes.includes(location.pathname);
 
   return (
@@ -89,6 +129,16 @@ function AppContent() {
             <AdminRoute>
               <AdminPanel />
             </AdminRoute>
+          } />
+          <Route path="/school-admin" element={
+            <SchoolAdminRoute>
+              <SchoolAdminPanel />
+            </SchoolAdminRoute>
+          } />
+          <Route path="/centre-admin" element={
+            <CentreAdminRoute>
+              <CentreAdminPanel />
+            </CentreAdminRoute>
           } />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />

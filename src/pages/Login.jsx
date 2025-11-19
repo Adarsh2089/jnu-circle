@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ArrowLeft } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +10,16 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleBackToHome = () => {
+    // Clear all form states
+    setEmail('');
+    setPassword('');
+    setError('');
+    setLoading(false);
+    // Navigate to home
+    navigate('/');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,6 +46,17 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Back to Home Button */}
+        <div className="flex justify-start">
+          <button
+            onClick={handleBackToHome}
+            className="flex items-center text-primary-600 hover:text-primary-700 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            <span className="font-medium">Back to Home</span>
+          </button>
+        </div>
+
         <div>
           <div className="flex justify-center">
             <BookOpen className="h-12 w-12 text-primary-600" />

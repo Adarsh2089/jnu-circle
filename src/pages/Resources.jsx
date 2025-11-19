@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import AdSlot from '../components/AdSlot';
 import SecureViewer from '../components/SecureViewer';
 import DashboardFooter from '../components/DashboardFooter';
+import { getCoursesForSchool } from '../data/schoolCourseMapping';
 
 const Resources = () => {
   const [resources, setResources] = useState([]);
@@ -14,9 +15,32 @@ const Resources = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [filterSchool, setFilterSchool] = useState('all');
+  const [filterCourse, setFilterCourse] = useState('user'); // 'user' means user's course, 'all' means all courses
+  const [filterSemester, setFilterSemester] = useState('all');
   const [selectedResource, setSelectedResource] = useState(null);
+  const [availableCourses, setAvailableCourses] = useState([]);
   const { userProfile } = useAuth();
+
+  // Get available courses for user's school
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (userProfile?.school) {
+        const courses = await getCoursesForSchool(userProfile.school);
+        setAvailableCourses(courses);
+      }
+    };
+    fetchCourses();
+  }, [userProfile?.school]);
+
+  // Set default filter to user's course and semester
+  useEffect(() => {
+    if (userProfile?.course) {
+      setFilterCourse('user'); // Default to user's course
+    }
+    if (userProfile?.semester) {
+      setFilterSemester(userProfile.semester.toString());
+    }
+  }, [userProfile]);
 
   useEffect(() => {
     if (!userProfile?.school) return;
@@ -64,7 +88,7 @@ const Resources = () => {
 
   useEffect(() => {
     filterResults();
-  }, [searchTerm, filterType, filterSchool, resources]);
+  }, [searchTerm, filterType, filterCourse, filterSemester, resources]);
 
   const fetchResources = async () => {
     try {
@@ -115,9 +139,31 @@ const Resources = () => {
       filtered = filtered.filter(resource => resource.type === filterType);
     }
 
-    // School filter
-    if (filterSchool !== 'all') {
-      filtered = filtered.filter(resource => resource.school === filterSchool);
+    // School filter (automatic - user can only see their school)
+    if (userProfile?.school) {
+      filtered = filtered.filter(resource => 
+        resource.school && resource.school.toLowerCase() === userProfile.school.toLowerCase()
+      );
+    }
+
+    // Course filter (user can choose to see their course or all courses)
+    if (filterCourse === 'user' && userProfile?.course) {
+      filtered = filtered.filter(resource => 
+        resource.course && resource.course.toLowerCase() === userProfile.course.toLowerCase()
+      );
+    } else if (filterCourse !== 'all' && filterCourse !== 'user') {
+      // Specific course selected
+      filtered = filtered.filter(resource => 
+        resource.course && resource.course.toLowerCase() === filterCourse.toLowerCase()
+      );
+    }
+    // If filterCourse is 'all', don't filter by course
+
+    // Semester filter
+    if (filterSemester !== 'all') {
+      filtered = filtered.filter(resource => 
+        resource.semester && resource.semester.toString() === filterSemester
+      );
     }
 
     setFilteredResources(filtered);
@@ -154,19 +200,33 @@ const Resources = () => {
           <h1 className="text-3xl font-bold text-gray-900">Browse Resources</h1>
           <p className="text-gray-600 mt-2">
             Showing resources from: <span className="font-semibold text-primary-600">{userProfile?.school || 'Your School'}</span>
+            {filterCourse === 'user' && userProfile?.course && (
+              <> • Course: <span className="font-semibold text-primary-600">{userProfile.course}</span></>
+            )}
+            {filterCourse === 'all' && (
+              <> • <span className="font-semibold text-primary-600">All Courses</span></>
+            )}
+            {filterCourse !== 'all' && filterCourse !== 'user' && (
+              <> • Course: <span className="font-semibold text-primary-600">{filterCourse}</span></>
+            )}
+            {filterSemester !== 'all' && (
+              <> • Semester: <span className="font-semibold text-primary-600">{filterSemester}</span></>
+            )}
           </p>
         </div>
 
-        {/* School Filter Notice */}
+        {/* School & Course Filter Notice */}
         <div className="mb-6 card bg-blue-50 border-2 border-blue-200">
           <div className="flex items-start">
             <Filter className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
             <div>
               <h3 className="text-sm font-semibold text-blue-900">
-                School/Centre Based Access
+                School-Based Access with Course Filtering
               </h3>
               <p className="text-sm text-blue-700 mt-1">
-                You can only view and access resources from your own school/centre: <strong>{userProfile?.school}</strong>
+                You can view resources from all courses in your school/centre: <strong>{userProfile?.school}</strong>
+                <br />
+                Use the course filter below to view resources from specific courses or all courses.
               </p>
             </div>
           </div>
@@ -196,15 +256,10 @@ const Resources = () => {
           </div>
         )}
 
-        {/* Ad Slot */}
-        <div className="mb-6">
-          <AdSlot slot="horizontal" />
-        </div>
-
         {/* Search and Filters */}
         <div className="card mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
@@ -231,7 +286,93 @@ const Resources = () => {
                 <option value="other">Other</option>
               </select>
             </div>
+
+            <div>
+              <select
+                className="input-field"
+                value={filterCourse}
+                onChange={(e) => setFilterCourse(e.target.value)}
+              >
+                <option value="user">{userProfile?.course || 'My Course'}</option>
+                <option value="all">All Courses</option>
+                {availableCourses.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <select
+                className="input-field"
+                value={filterSemester}
+                onChange={(e) => setFilterSemester(e.target.value)}
+              >
+                <option value="all">All Semesters</option>
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+                <option value="3">Semester 3</option>
+                <option value="4">Semester 4</option>
+                <option value="5">Semester 5</option>
+                <option value="6">Semester 6</option>
+                <option value="7">Semester 7</option>
+                <option value="8">Semester 8</option>
+              </select>
+            </div>
           </div>
+          
+          {/* Active Filters Info */}
+          {(filterCourse !== 'user' || filterSemester !== 'all') && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-gray-600">Active Filters:</span>
+                {filterCourse !== 'user' && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    Course: {filterCourse === 'all' ? 'All Courses' : filterCourse}
+                    <button
+                      onClick={() => setFilterCourse('user')}
+                      className="ml-1 hover:text-primary-900"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {filterSemester !== 'all' && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    Semester: {filterSemester}
+                    <button
+                      onClick={() => setFilterSemester('all')}
+                      className="ml-1 hover:text-primary-900"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setFilterCourse('user');
+                    setFilterSemester('all');
+                    setFilterType('all');
+                    setSearchTerm('');
+                  }}
+                  className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-semibold text-gray-900">{filteredResources.length}</span> {filteredResources.length === 1 ? 'resource' : 'resources'}
+            {(filterCourse !== 'user' || filterSemester !== 'all' || filterType !== 'all' || searchTerm) && (
+              <span> matching your filters</span>
+            )}
+          </p>
         </div>
 
         {/* Resources Grid */}
@@ -289,16 +430,33 @@ const Resources = () => {
         </div>
 
         {filteredResources.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No resources found</p>
-            <p className="text-gray-500 mt-2">Try adjusting your filters or search term</p>
+          <div className="text-center py-12 card">
+            <div className="max-w-md mx-auto">
+              <Filter className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-900 text-lg font-semibold mb-2">No resources found</p>
+              <p className="text-gray-600 mb-4">
+                {searchTerm || filterType !== 'all' || filterCourse !== 'user' || filterSemester !== 'all' ? (
+                  <>Try adjusting your filters or search term</>
+                ) : (
+                  <>No resources available from your school and course yet. Be the first to contribute!</>
+                )}
+              </p>
+              {(searchTerm || filterType !== 'all' || filterCourse !== 'user' || filterSemester !== 'all') && (
+                <button
+                  onClick={() => {
+                    setFilterCourse('user');
+                    setFilterSemester('all');
+                    setFilterType('all');
+                    setSearchTerm('');
+                  }}
+                  className="btn-secondary"
+                >
+                  Clear All Filters
+                </button>
+              )}
+            </div>
           </div>
         )}
-
-        {/* Ad Slot */}
-        <div className="mt-8">
-          <AdSlot slot="horizontal" />
-        </div>
         </div>
       </div>
 

@@ -1,21 +1,23 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Upload, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { Upload, BookOpen, Award, TrendingUp, UserPlus } from 'lucide-react';
 import AdSlot from '../components/AdSlot';
 import SecureViewer from '../components/SecureViewer';
 import DashboardFooter from '../components/DashboardFooter';
+import NominationForm from '../components/NominationForm';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 const Dashboard = () => {
   const { userProfile } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, hasAdminAccess } = useAdmin();
   const navigate = useNavigate();
   const [recentResources, setRecentResources] = useState([]);
   const [loadingResources, setLoadingResources] = useState(true);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [showNominationForm, setShowNominationForm] = useState(false);
 
   // Redirect admin to admin panel
   useEffect(() => {
@@ -128,11 +130,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Ad Slot */}
-        <div className="mb-8">
-          <AdSlot slot="horizontal" />
-        </div>
-
         {/* Access Status */}
         {!userProfile?.isPremium && !userProfile?.hasContributed && (
           <div className="card bg-yellow-50 border-2 border-yellow-200 mb-8">
@@ -165,7 +162,7 @@ const Dashboard = () => {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link to="/resources" className="card hover:border-primary-300 border-2 border-transparent">
             <div className="flex items-center">
               <BookOpen className="h-12 w-12 text-primary-600 mr-4" />
@@ -189,6 +186,24 @@ const Dashboard = () => {
               </div>
             </div>
           </Link>
+
+          {/* Only show nomination card if user doesn't have admin access */}
+          {!hasAdminAccess && (
+            <button 
+              onClick={() => setShowNominationForm(true)}
+              className="card hover:border-blue-300 border-2 border-transparent text-left w-full"
+            >
+              <div className="flex items-center">
+                <UserPlus className="h-12 w-12 text-blue-600 mr-4" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">Become a Representative</h3>
+                  <p className="text-gray-600 mt-1">
+                    Nominate yourself as School/Centre Admin
+                  </p>
+                </div>
+              </div>
+            </button>
+          )}
         </div>
 
         {/* Recent Resources Section */}
@@ -256,11 +271,6 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-
-        {/* Ad Slot */}
-        <div className="mt-8">
-          <AdSlot slot="horizontal" />
-        </div>
         </div>
       </div>
 
@@ -273,6 +283,11 @@ const Dashboard = () => {
           resource={selectedResource}
           onClose={() => setSelectedResource(null)}
         />
+      )}
+
+      {/* Nomination Form Modal */}
+      {showNominationForm && (
+        <NominationForm onClose={() => setShowNominationForm(false)} />
       )}
     </div>
   );

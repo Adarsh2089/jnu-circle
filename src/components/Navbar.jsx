@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 const Navbar = () => {
   const { user, userProfile, logout } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, isSchoolAdmin, isCentreAdmin } = useAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === '/';
@@ -34,14 +34,40 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
+                {/* Show Home button if not on home page */}
+                {!isHomePage && (
+                  <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                    <Home className="h-4 w-4" />
+                    <span>Home</span>
+                  </Link>
+                )}
                 {/* Show Dashboard only if not on home page */}
                 {!isHomePage && (
                   <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                     Dashboard
                   </Link>
                 )}
-                {/* Show Resources only if not on home page and not admin */}
-                {!isHomePage && !isAdmin && (
+                {/* Admin Panel Links */}
+                {!isHomePage && isAdmin && (
+                  <Link to="/admin" className="text-primary-600 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                    <Shield className="h-4 w-4" />
+                    <span>Admin Panel</span>
+                  </Link>
+                )}
+                {!isHomePage && isSchoolAdmin && (
+                  <Link to="/school-admin" className="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                    <Shield className="h-4 w-4" />
+                    <span>School Admin</span>
+                  </Link>
+                )}
+                {!isHomePage && isCentreAdmin && (
+                  <Link to="/centre-admin" className="text-indigo-600 hover:text-indigo-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                    <Shield className="h-4 w-4" />
+                    <span>Centre Admin</span>
+                  </Link>
+                )}
+                {/* Show Resources only if not on home page and not any admin */}
+                {!isHomePage && !isAdmin && !isSchoolAdmin && !isCentreAdmin && (
                   <Link to="/resources" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                     Resources
                   </Link>
@@ -52,8 +78,8 @@ const Navbar = () => {
                     Upload
                   </Link>
                 )}
-                {/* Show Profile only if not on home page and not admin */}
-                {!isHomePage && !isAdmin && (
+                {/* Show Profile only if not on home page and not any admin */}
+                {!isHomePage && !isAdmin && !isSchoolAdmin && !isCentreAdmin && (
                   <Link to="/profile" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                     Profile
                   </Link>
@@ -118,13 +144,51 @@ const Navbar = () => {
                 ) : (
                   <>
                     <Link 
+                      to="/" 
+                      className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md flex items-center space-x-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Home</span>
+                    </Link>
+                    <Link 
                       to="/dashboard" 
                       className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Dashboard
                     </Link>
-                    {!isAdmin && (
+                    {isAdmin && (
+                      <Link 
+                        to="/admin" 
+                        className="block text-primary-600 hover:bg-primary-50 px-3 py-2 rounded-md flex items-center space-x-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>Admin Panel</span>
+                      </Link>
+                    )}
+                    {isSchoolAdmin && (
+                      <Link 
+                        to="/school-admin" 
+                        className="block text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-md flex items-center space-x-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>School Admin</span>
+                      </Link>
+                    )}
+                    {isCentreAdmin && (
+                      <Link 
+                        to="/centre-admin" 
+                        className="block text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-md flex items-center space-x-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>Centre Admin</span>
+                      </Link>
+                    )}
+                    {!isAdmin && !isSchoolAdmin && !isCentreAdmin && (
                       <Link 
                         to="/resources" 
                         className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"
@@ -140,7 +204,7 @@ const Navbar = () => {
                     >
                       Upload
                     </Link>
-                    {!isAdmin && (
+                    {!isAdmin && !isSchoolAdmin && !isCentreAdmin && (
                       <Link 
                         to="/profile" 
                         className="block text-gray-700 hover:bg-gray-100 px-3 py-2 rounded-md"

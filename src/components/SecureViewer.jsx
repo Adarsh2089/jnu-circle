@@ -257,52 +257,52 @@ const SecureViewer = ({ resource, onClose }) => {
     >
       {/* Header */}
       <div 
-        className="bg-gray-900 text-white p-4 flex items-center justify-between"
+        className="bg-gray-900 text-white p-3 sm:p-4 flex items-center justify-between"
         style={{ touchAction: 'none' }} // Disable touch zoom on header
         onContextMenu={(e) => { e.preventDefault(); return false; }}
       >
-        <div className="flex-1">
-          <h2 className="text-xl font-bold">{resource.title}</h2>
-          <p className="text-sm text-gray-400 mt-1">
+        <div className="flex-1 min-w-0 pr-2">
+          <h2 className="text-sm sm:text-xl font-bold truncate">{resource.title}</h2>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1 truncate">
             {resource.subject} • {resource.course} • {resource.year}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
         >
-          <X className="h-6 w-6" />
+          <X className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
       </div>
 
       {/* Security Notice with Zoom Controls */}
       <div 
-        className="bg-yellow-900 bg-opacity-50 text-yellow-200 px-4 py-2 flex items-center justify-between text-sm"
+        className="bg-yellow-900 bg-opacity-50 text-yellow-200 px-2 sm:px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm"
         style={{ touchAction: 'none' }} // Disable touch zoom on notice bar
         onContextMenu={(e) => { e.preventDefault(); return false; }}
       >
         <div className="flex items-center">
-          <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>
-            Protected Content: Download, print, and copy functions are disabled. 
-            This viewing session is tracked.
+          <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+          <span className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Protected Content: Download, print, and copy functions are disabled. This viewing session is tracked.</span>
+            <span className="sm:hidden">Protected Content • Tracking enabled</span>
           </span>
         </div>
         
         {/* Zoom Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-end">
           <button
             onClick={zoomOut}
             disabled={scale <= 0.5}
-            className="p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+            className="p-1.5 sm:p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
             title="Zoom Out (25%)"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>
           
           <button
             onClick={resetZoom}
-            className="px-3 py-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors font-semibold"
+            className="px-2 py-1.5 sm:px-3 sm:py-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors font-semibold text-xs sm:text-sm"
             title="Reset to 100%"
           >
             {Math.round(scale * 100)}%
@@ -311,19 +311,19 @@ const SecureViewer = ({ resource, onClose }) => {
           <button
             onClick={zoomIn}
             disabled={scale >= 3}
-            className="p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+            className="p-1.5 sm:p-2 bg-yellow-800 hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
             title="Zoom In (25%)"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>
 
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className="p-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors ml-2"
+            className="p-1.5 sm:p-2 bg-yellow-800 hover:bg-yellow-700 rounded transition-colors ml-1 sm:ml-2"
             title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen"}
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-3 w-3 sm:h-4 sm:w-4" />
           </button>
         </div>
       </div>
@@ -399,8 +399,9 @@ const SecureViewer = ({ resource, onClose }) => {
       </div>
 
       {/* Footer Watermark */}
-      <div className="bg-gray-900 text-gray-400 px-4 py-2 text-xs text-center">
-        Viewed by: {watermarkText} | © JNU Circle - All Rights Reserved
+      <div className="bg-gray-900 text-gray-400 px-2 sm:px-4 py-2 text-[10px] sm:text-xs text-center break-words">
+        <span className="hidden sm:inline">Viewed by: {watermarkText} | © JNU Circle - All Rights Reserved</span>
+        <span className="sm:hidden">Viewed by: {userProfile?.fullName || user?.email?.split('@')[0] || 'User'} | © JNU Circle</span>
       </div>
     </div>
   );

@@ -66,8 +66,10 @@ const PDFViewer = ({ url, scale, watermarkText }) => {
         try {
           const page = await pdfDoc.getPage(pageNum);
           
-          // Use higher DPI for sharper rendering
-          const desiredWidth = 1200; // Higher base resolution
+          // Use responsive width for better mobile display
+          const containerWidth = container.clientWidth || window.innerWidth;
+          const isMobile = window.innerWidth < 640;
+          const desiredWidth = isMobile ? containerWidth - 20 : 1200; // Responsive base resolution
           const originalViewport = page.getViewport({ scale: 1 });
           const scaleToFit = desiredWidth / originalViewport.width;
           const viewport = page.getViewport({ scale: scaleToFit * scale });
@@ -82,7 +84,9 @@ const PDFViewer = ({ url, scale, watermarkText }) => {
           canvas.style.width = `${viewport.width}px`;
           canvas.style.height = `${viewport.height}px`;
           canvas.style.display = 'block';
-          canvas.style.margin = '10px auto';
+          canvas.style.margin = isMobile ? '5px auto' : '10px auto';
+          canvas.style.maxWidth = '100%';
+          canvas.style.height = 'auto';
           canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
           canvas.style.backgroundColor = 'white';
 
@@ -122,7 +126,8 @@ const PDFViewer = ({ url, scale, watermarkText }) => {
           if (watermarkText) {
             context.save();
             context.globalAlpha = 0.08;
-            context.font = '12px Arial';
+            const fontSize = isMobile ? 8 : 12;
+            context.font = `${fontSize}px Arial`;
             context.fillStyle = '#666';
             context.rotate(-45 * Math.PI / 180);
 
@@ -189,7 +194,8 @@ const PDFViewer = ({ url, scale, watermarkText }) => {
         userSelect: 'none', // Disable text selection
         WebkitUserSelect: 'none',
         touchAction: 'pan-y pinch-zoom',
-        padding: '20px 0'
+        padding: window.innerWidth < 640 ? '10px 0' : '20px 0',
+        overflowX: 'hidden'
       }}
     />
   );

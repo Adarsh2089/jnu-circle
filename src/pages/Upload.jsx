@@ -1,22 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAdmin } from '../contexts/AdminContext';
 import { useNavigate } from 'react-router-dom';
 import { uploadToCloudinary } from '../config/cloudinary';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Upload as UploadIcon, FileText, CheckCircle } from 'lucide-react';
 import UploadSuccessModal from '../components/UploadSuccessModal';
 import DashboardFooter from '../components/DashboardFooter';
+import CourseRequestModal from '../components/CourseRequestModal';
+import { 
+  getCoursesForSchool, 
+  getAllSchools, 
+  isSchoolHavingCentres, 
+  getCentresForSchool, 
+  getCoursesForEntity 
+} from '../data/schoolCourseMapping';
 
 const Upload = () => {
   const { user, userProfile } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    school: userProfile?.school || '', // Auto-fill from user's school
-    course: '',
+    school: isAdmin ? '' : (userProfile?.school || ''), // Admin can select any school, users locked to their school
+    centre: '', // New field for centre selection
+    course: '', // Let user select any course from their school
     subject: '',
     type: 'pyq',
     year: new Date().getFullYear(),
@@ -28,18 +39,79 @@ const Upload = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  // Update school when userProfile loads
-  useState(() => {
-    if (userProfile?.school) {
-      setFormData(prev => ({ ...prev, school: userProfile.school }));
-    }
-  }, [userProfile]);
+  // Cascading dropdown states for admin
+  const [showCentreField, setShowCentreField] = useState(false);
+  const [availableCentres, setAvailableCentres] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [allSchools, setAllSchools] = useState([]);
+  const [showCourseRequestModal, setShowCourseRequestModal] = useState(false);
+
+  // Initialize schools and courses on component mount
+  useEffect(() => {
+    const initializeData = async () => {
+      // Get all schools
+      const schools = await getAllSchools();
+      setAllSchools(schools);
+
+      // For non-admin users, initialize courses based on their school
+      if (!isAdmin && userProfile?.school) {
+        setFormData(prev => ({
+          ...prev,
+          school: userProfile.school
+        }));
+        const courses = await getCoursesForSchool(userProfile.school);
+        setAvailableCourses(courses);
+      }
+    };
+    initializeData();
+  }, [isAdmin, userProfile]);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleSchoolChange = async (e) => {
+    const selectedSchool = e.target.value;
+    setFormData({
+      ...formData,
+      school: selectedSchool,
+      centre: '',
+      course: ''
+    });
+
+    // For admin, handle cascading
+    if (isAdmin && selectedSchool) {
+      if (await isSchoolHavingCentres(selectedSchool)) {
+        setShowCentreField(true);
+        const centres = await getCentresForSchool(selectedSchool);
+        setAvailableCentres(centres);
+        setAvailableCourses([]);
+      } else {
+        setShowCentreField(false);
+        setAvailableCentres([]);
+        const courses = await getCoursesForEntity(selectedSchool);
+        setAvailableCourses(courses);
+      }
+    }
+  };
+
+  const handleCentreChange = async (e) => {
+    const selectedCentre = e.target.value;
+    setFormData({
+      ...formData,
+      centre: selectedCentre,
+      course: ''
+    });
+
+    if (selectedCentre) {
+      const courses = await getCoursesForEntity(selectedCentre);
+      setAvailableCourses(courses);
+    } else {
+      setAvailableCourses([]);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -111,12 +183,19 @@ const Upload = () => {
         fileFormat: cloudinaryResult.format || file.name.split('.').pop() || 'unknown',
         fileSize: cloudinaryResult.bytes || file.size || 0,
         uploadedBy: user.uid,
-        uploaderName: userProfile?.fullName || 'Anonymous',
-        uploaderSchool: userProfile?.school || 'N/A',
+        uploaderName: userProfile?.name || userProfile?.fullName || 'Anonymous',
+        uploaderEmail: user.email || '',
+        uploaderSchool: formData.school || userProfile?.school || 'N/A',
+        uploaderCentre: formData.centre || userProfile?.centre || '',
         uploadedAt: new Date().toISOString(),
         views: 0,
         verified: false,
-        verificationStatus: 'pending' // Default status: pending admin approval
+        verificationStatus: 'pending', // Default status: pending admin approval
+        verifiedAt: null,
+        verifiedBy: null,
+        rejectedAt: null,
+        rejectedBy: null,
+        rejectionReason: ''
       };
       
       console.log('Resource data to save:', resourceData);
@@ -124,8 +203,14 @@ const Upload = () => {
       
       console.log('Firestore save successful. Document ID:', docRef.id);
 
-      // Update user's contribution status
-      // This would be done through a Cloud Function in production
+      // Update user's contribution status in their profile
+      setUploadProgress('Updating your profile...');
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        hasContributed: true,
+        contributionCount: increment(1)
+      });
+      console.log('User profile updated - contribution count incremented');
       
       setUploadProgress('Upload complete!');
       setSuccess(true);
@@ -143,11 +228,12 @@ const Upload = () => {
 
   const handleCloseSuccessModal = () => {
     setSuccess(false);
-    // Reset form
+    // Reset form - admin gets empty fields, users get their school pre-filled
     setFormData({
       title: '',
       description: '',
-      school: '',
+      school: isAdmin ? '' : (userProfile?.school || ''),
+      centre: '',
       course: '',
       subject: '',
       type: 'pyq',
@@ -162,14 +248,50 @@ const Upload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-1 py-8">
+    <>
+      <CourseRequestModal 
+        isOpen={showCourseRequestModal}
+        onClose={() => setShowCourseRequestModal(false)}
+        prefilledSchool={formData.school}
+        prefilledCentre={formData.centre}
+      />
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex-1 py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Upload Resource</h1>
           <p className="text-gray-600 mt-2">
             Share your PYQs, notes, or study materials with fellow JNU students
           </p>
+        </div>
+
+        {/* Access Control Notice */}
+        <div className="mb-6 card bg-blue-50 border-2 border-blue-200">
+          <div className="flex items-start">
+            <FileText className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
+            <div>
+              <h3 className="text-sm font-semibold text-blue-900">
+                {isAdmin ? 'Admin Upload Access' : 'Upload for Your School/Centre'}
+              </h3>
+              <p className="text-sm text-blue-700 mt-1">
+                {isAdmin ? (
+                  <>
+                    As an admin, you can upload resources for any school/centre and course.
+                    <br />
+                    Select the school and course from the dropdowns below.
+                  </>
+                ) : (
+                  <>
+                    You can upload resources for any course in your school/centre: <br />
+                    <strong>{userProfile?.school}</strong>
+                  </>
+                )}
+              </p>
+              <p className="text-xs text-blue-600 mt-2">
+                {isAdmin ? 'Help students across all schools!' : 'Help your fellow students by sharing resources from any course!'}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="card">
@@ -234,37 +356,103 @@ const Upload = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   School/Centre *
                 </label>
-                <input
-                  type="text"
-                  name="school"
-                  required
-                  className="input-field bg-gray-100 cursor-not-allowed"
-                  placeholder="Your school"
-                  value={formData.school}
-                  readOnly
-                  disabled
-                  title="You can only upload resources for your own school/centre"
-                />
+                {isAdmin ? (
+                  <select
+                    name="school"
+                    required
+                    className="input-field"
+                    value={formData.school}
+                    onChange={handleSchoolChange}
+                  >
+                    <option value="">Select school/centre</option>
+                    {allSchools.map(school => (
+                      <option key={school} value={school}>{school}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    name="school"
+                    required
+                    className="input-field bg-gray-100 cursor-not-allowed"
+                    placeholder="Your school"
+                    value={formData.school}
+                    readOnly
+                    disabled
+                    title="You can only upload resources for your own school/centre"
+                  />
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  You can only upload content for your school/centre
+                  {isAdmin ? 'Select any school/centre' : 'You can only upload content for your school/centre'}
                 </p>
               </div>
             </div>
+
+            {/* Centre Field - Only show for admin if school has centres */}
+            {isAdmin && showCentreField && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Centre *
+                </label>
+                <select
+                  name="centre"
+                  required
+                  className="input-field"
+                  value={formData.centre}
+                  onChange={handleCentreChange}
+                >
+                  <option value="">Select centre</option>
+                  {availableCentres.map(centre => (
+                    <option key={centre} value={centre}>{centre}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Select the centre under this school
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Course *
                 </label>
-                <input
-                  type="text"
+                <select
                   name="course"
                   required
                   className="input-field"
-                  placeholder="e.g., B.Tech CSE"
                   value={formData.course}
                   onChange={handleChange}
-                />
+                  disabled={availableCourses.length === 0}
+                >
+                  <option value="">Select course</option>
+                  {availableCourses.map((course) => (
+                    <option key={course} value={course}>
+                      {course}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {isAdmin 
+                    ? (showCentreField && !formData.centre 
+                        ? 'Select centre first' 
+                        : !formData.school 
+                        ? 'Select school first'
+                        : 'Select course from the chosen ' + (formData.centre ? 'centre' : 'school'))
+                    : 'Select any course from your school/centre'}
+                </p>
+                {availableCourses.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Can't find your course?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseRequestModal(true)}
+                      className="text-primary-600 hover:text-primary-700 font-medium underline"
+                    >
+                      Request to add it
+                    </button>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -397,19 +585,20 @@ const Upload = () => {
           </form>
         </div>
         </div>
+        </div>
+
+        {/* Minimal Footer */}
+        <DashboardFooter />
+
+        {/* Success Modal Overlay */}
+        {success && (
+          <UploadSuccessModal
+            onClose={handleCloseSuccessModal}
+            onViewDashboard={handleGoToDashboard}
+          />
+        )}
       </div>
-
-      {/* Minimal Footer */}
-      <DashboardFooter />
-
-      {/* Success Modal Overlay */}
-      {success && (
-        <UploadSuccessModal
-          onClose={handleCloseSuccessModal}
-          onViewDashboard={handleGoToDashboard}
-        />
-      )}
-    </div>
+    </>
   );
 };
 

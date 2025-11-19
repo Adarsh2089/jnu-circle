@@ -1,11 +1,20 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { User, Mail, GraduationCap, Calendar, Award, Upload as UploadIcon, Edit2, Save, X, TrendingUp, Target } from 'lucide-react';
+import CourseRequestModal from '../components/CourseRequestModal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import DashboardFooter from '../components/DashboardFooter';
+
+// Import school-course mapping
+import { 
+  getAllSchools, 
+  isSchoolHavingCentres, 
+  getCentresForSchool, 
+  getCoursesForEntity 
+} from '../data/schoolCourseMapping';
 
 const Profile = () => {
   const { user, userProfile } = useAuth();
@@ -16,9 +25,17 @@ const Profile = () => {
   const [editedProfile, setEditedProfile] = useState({
     fullName: '',
     school: '',
+    centre: '',
     course: '',
+    semester: '',
     enrollmentYear: ''
   });
+
+  // Cascading dropdown states
+  const [showCentreField, setShowCentreField] = useState(false);
+  const [availableCentres, setAvailableCentres] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [showCourseRequestModal, setShowCourseRequestModal] = useState(false);
 
   // Redirect admin to admin panel
   useEffect(() => {
@@ -33,9 +50,31 @@ const Profile = () => {
       setEditedProfile({
         fullName: userProfile.fullName || '',
         school: userProfile.school || '',
+        centre: userProfile.centre || '',
         course: userProfile.course || '',
+        semester: userProfile.semester || '',
         enrollmentYear: userProfile.enrollmentYear || ''
       });
+
+      // Initialize cascading state based on current profile
+      const initializeCascadingData = async () => {
+        if (userProfile.school) {
+          if (await isSchoolHavingCentres(userProfile.school)) {
+            setShowCentreField(true);
+            const centres = await getCentresForSchool(userProfile.school);
+            setAvailableCentres(centres);
+            if (userProfile.centre) {
+              const courses = await getCoursesForEntity(userProfile.centre);
+              setAvailableCourses(courses);
+            }
+          } else {
+            setShowCentreField(false);
+            const courses = await getCoursesForEntity(userProfile.school);
+            setAvailableCourses(courses);
+          }
+        }
+      };
+      initializeCascadingData();
     }
   }, [userProfile]);
 
@@ -43,15 +82,34 @@ const Profile = () => {
     setIsEditing(true);
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     setIsEditing(false);
     // Reset to original values
     setEditedProfile({
       fullName: userProfile?.fullName || '',
       school: userProfile?.school || '',
+      centre: userProfile?.centre || '',
       course: userProfile?.course || '',
+      semester: userProfile?.semester || '',
       enrollmentYear: userProfile?.enrollmentYear || ''
     });
+
+    // Reset cascading states
+    if (userProfile?.school) {
+      if (await isSchoolHavingCentres(userProfile.school)) {
+        setShowCentreField(true);
+        const centres = await getCentresForSchool(userProfile.school);
+        setAvailableCentres(centres);
+        if (userProfile.centre) {
+          const courses = await getCoursesForEntity(userProfile.centre);
+          setAvailableCourses(courses);
+        }
+      } else {
+        setShowCentreField(false);
+        const courses = await getCoursesForEntity(userProfile.school);
+        setAvailableCourses(courses);
+      }
+    }
   };
 
   const handleSave = async () => {
@@ -63,7 +121,9 @@ const Profile = () => {
       await updateDoc(userRef, {
         fullName: editedProfile.fullName,
         school: editedProfile.school,
+        centre: editedProfile.centre || null, // Include centre
         course: editedProfile.course,
+        semester: parseInt(editedProfile.semester) || null,
         enrollmentYear: editedProfile.enrollmentYear
       });
       setIsEditing(false);
@@ -83,9 +143,63 @@ const Profile = () => {
     }));
   };
 
+  // Handle school change - reset centre and course when school changes
+  const handleSchoolChange = async (school) => {
+    setEditedProfile(prev => ({
+      ...prev,
+      school: school,
+      centre: '',
+      course: ''
+    }));
+
+    if (school && await isSchoolHavingCentres(school)) {
+      // School has centres - show centre dropdown
+      setShowCentreField(true);
+      const centres = await getCentresForSchool(school);
+      setAvailableCentres(centres);
+      setAvailableCourses([]);
+    } else if (school) {
+      // School has direct courses - show courses
+      setShowCentreField(false);
+      setAvailableCentres([]);
+      const courses = await getCoursesForEntity(school);
+      setAvailableCourses(courses);
+    } else {
+      // No school selected
+      setShowCentreField(false);
+      setAvailableCentres([]);
+      setAvailableCourses([]);
+    }
+  };
+
+  // Handle centre change - reset course when centre changes
+  const handleCentreChange = async (centre) => {
+    setEditedProfile(prev => ({
+      ...prev,
+      centre: centre,
+      course: ''
+    }));
+
+    if (centre) {
+      const courses = await getCoursesForEntity(centre);
+      setAvailableCourses(courses);
+    } else {
+      setAvailableCourses([]);
+    }
+  };
+
+  const jnuSchools = getAllSchools();
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="flex-1 py-8">
+    <>
+      <CourseRequestModal 
+        isOpen={showCourseRequestModal}
+        onClose={() => setShowCourseRequestModal(false)}
+        prefilledSchool={editedProfile.school}
+        prefilledCentre={editedProfile.centre}
+      />
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex-1 py-8">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Profile Card */}
         <div className="card mb-6">
@@ -156,33 +270,93 @@ const Profile = () => {
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 mb-1">School</p>
                   {isEditing ? (
-                    <input
-                      type="text"
+                    <select
                       value={editedProfile.school}
-                      onChange={(e) => handleChange('school', e.target.value)}
-                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none"
-                      placeholder="School"
-                    />
+                      onChange={(e) => handleSchoolChange(e.target.value)}
+                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+                    >
+                      <option value="">Select School</option>
+                      {jnuSchools.map((school) => (
+                        <option key={school} value={school}>
+                          {school}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <p className="font-medium text-gray-900">{userProfile?.school || 'N/A'}</p>
                   )}
                 </div>
               </div>
 
+              {/* Centre Field - Only show in edit mode if school has centres */}
+              {isEditing && showCentreField && (
+                <div className="flex items-start space-x-3">
+                  <GraduationCap className="h-5 w-5 text-gray-400 mt-1" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 mb-1">Centre</p>
+                    <select
+                      value={editedProfile.centre}
+                      onChange={(e) => handleCentreChange(e.target.value)}
+                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+                    >
+                      <option value="">Select Centre</option>
+                      {availableCentres.map((centre) => (
+                        <option key={centre} value={centre}>
+                          {centre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+              {!isEditing && userProfile?.centre && (
+                <div className="flex items-start space-x-3">
+                  <GraduationCap className="h-5 w-5 text-gray-400 mt-1" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500 mb-1">Centre</p>
+                    <p className="font-medium text-gray-900">{userProfile.centre}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-start space-x-3">
                 <GraduationCap className="h-5 w-5 text-gray-400 mt-1" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 mb-1">Course</p>
                   {isEditing ? (
-                    <input
-                      type="text"
+                    <select
                       value={editedProfile.course}
                       onChange={(e) => handleChange('course', e.target.value)}
-                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none"
-                      placeholder="Course"
-                    />
+                      disabled={availableCourses.length === 0}
+                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent disabled:opacity-50"
+                    >
+                      <option value="">
+                        {!editedProfile.school 
+                          ? 'Select School First' 
+                          : showCentreField && !editedProfile.centre
+                          ? 'Select Centre First'
+                          : 'Select Course'}
+                      </option>
+                      {availableCourses.map((course) => (
+                        <option key={course} value={course}>
+                          {course}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <p className="font-medium text-gray-900">{userProfile?.course || 'N/A'}</p>
+                  )}
+                  {isEditing && availableCourses.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Can't find your course?{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowCourseRequestModal(true)}
+                        className="text-blue-600 hover:text-blue-700 font-medium underline"
+                      >
+                        Request to add it
+                      </button>
+                    </p>
                   )}
                 </div>
               </div>
@@ -190,6 +364,34 @@ const Profile = () => {
 
             {/* Right Column */}
             <div className="space-y-5">
+              <div className="flex items-start space-x-3">
+                <GraduationCap className="h-5 w-5 text-gray-400 mt-1" />
+                <div className="flex-1">
+                  <p className="text-sm text-gray-500 mb-1">Current Semester</p>
+                  {isEditing ? (
+                    <select
+                      value={editedProfile.semester}
+                      onChange={(e) => handleChange('semester', e.target.value)}
+                      className="w-full font-medium text-gray-900 border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+                    >
+                      <option value="">Select Semester</option>
+                      <option value="1">Semester 1</option>
+                      <option value="2">Semester 2</option>
+                      <option value="3">Semester 3</option>
+                      <option value="4">Semester 4</option>
+                      <option value="5">Semester 5</option>
+                      <option value="6">Semester 6</option>
+                      <option value="7">Semester 7</option>
+                      <option value="8">Semester 8</option>
+                    </select>
+                  ) : (
+                    <p className="font-medium text-gray-900">
+                      {userProfile?.semester ? `Semester ${userProfile.semester}` : 'N/A'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-start space-x-3">
                 <Calendar className="h-5 w-5 text-gray-400 mt-1" />
                 <div className="flex-1">
@@ -285,11 +487,12 @@ const Profile = () => {
           </div>
         </div>
         </div>
-      </div>
+        </div>
 
-      {/* Minimal Footer */}
-      <DashboardFooter />
-    </div>
+        {/* Minimal Footer */}
+        <DashboardFooter />
+      </div>
+    </>
   );
 };
 

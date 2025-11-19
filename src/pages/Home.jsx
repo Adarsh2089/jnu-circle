@@ -1,11 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Upload, Shield, Star, Users, Award } from 'lucide-react';
-import AdSlot from '../components/AdSlot';
+import { BookOpen, Upload, Shield, Star, Users, Award, ImageOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAdmin } from '../contexts/AdminContext';
+import MigrateCourseData from '../components/MigrateCourseData';
+import NominationForm from '../components/NominationForm';
+import { useState } from 'react';
 
 const Home = () => {
   const { user } = useAuth();
+  const { isAdmin, hasAdminAccess } = useAdmin();
   const navigate = useNavigate();
+  const [showNominationForm, setShowNominationForm] = useState(false);
 
   const handleGetStarted = (e) => {
     if (user) {
@@ -42,10 +47,11 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Ad Slot */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <AdSlot slot="horizontal" />
-      </div>
+      {isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6">
+          <MigrateCourseData />
+        </div>
+      )}
 
       {/* Features Section */}
       <section className="py-16 bg-white">
@@ -86,11 +92,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Ad Slot */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <AdSlot slot="horizontal" />
-      </div>
-
       {/* How It Works */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -130,7 +131,49 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Nomination Banner - Only show for non-admin users */}
+      {!hasAdminAccess && (
+        <section className="py-12 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-xl shadow-lg p-8 md:flex md:items-center md:justify-between">
+            <div className="mb-6 md:mb-0">
+              <div className="flex items-center mb-3">
+                <UserPlus className="h-8 w-8 text-blue-600 mr-3" />
+                <h3 className="text-2xl font-bold text-gray-900">
+                  Become a Representative
+                </h3>
+              </div>
+              <p className="text-gray-600 text-lg">
+                Help manage resources for your school or centre. Nominate yourself as a School or Centre Admin!
+              </p>
+              <ul className="mt-4 space-y-2 text-sm text-gray-700">
+                <li className="flex items-center">
+                  <Shield className="h-4 w-4 text-green-500 mr-2" />
+                  Review and approve course requests
+                </li>
+                <li className="flex items-center">
+                  <Shield className="h-4 w-4 text-green-500 mr-2" />
+                  Manage resources for your school/centre
+                </li>
+                <li className="flex items-center">
+                  <Shield className="h-4 w-4 text-green-500 mr-2" />
+                  Support your academic community
+                </li>
+              </ul>
+            </div>
+            <button
+              onClick={() => setShowNominationForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg text-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <UserPlus className="h-5 w-5" />
+              Nominate Now
+            </button>
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* Stats Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold text-center mb-12">Simple Pricing</h2>
@@ -208,11 +251,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Ad Slot */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-8">
-        <AdSlot slot="horizontal" />
-      </div>
-
       {/* CTA Section */}
       <section className="bg-primary-600 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -229,6 +267,11 @@ const Home = () => {
           </Link>
         </div>
       </section>
+
+      {/* Nomination Form Modal */}
+      {showNominationForm && (
+        <NominationForm onClose={() => setShowNominationForm(false)} />
+      )}
     </div>
   );
 };

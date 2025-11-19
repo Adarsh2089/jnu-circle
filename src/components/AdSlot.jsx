@@ -29,17 +29,13 @@ const AdSlot = ({ slot = 'horizontal', className = '' }) => {
 
   return (
     <div className={`ad-container ${getAdDimensions()} ${className}`} ref={adRef}>
-      {/* Replace with your actual AdSense code */}
       <ins
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client="ca-pub-xxxxxxxxxx" // Replace with your AdSense ID
-        data-ad-slot="xxxxxxxxxx" // Replace with your ad slot ID
+        data-ad-client="ca-pub-1811916017128614"
         data-ad-format="auto"
         data-full-width-responsive="true"
       />
-      {/* Placeholder text - remove when ads are live */}
-      <span className="text-sm">Advertisement Space</span>
     </div>
   );
 };
