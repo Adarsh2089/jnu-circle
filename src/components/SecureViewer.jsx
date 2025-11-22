@@ -400,8 +400,8 @@ const SecureViewer = ({ resource, onClose }) => {
 
       {/* Footer Watermark */}
       <div className="bg-gray-900 text-gray-400 px-2 sm:px-4 py-2 text-[10px] sm:text-xs text-center break-words">
-        <span className="hidden sm:inline">Viewed by: {watermarkText} | © JNU Circle - All Rights Reserved</span>
-        <span className="sm:hidden">Viewed by: {userProfile?.fullName || user?.email?.split('@')[0] || 'User'} | © JNU Circle</span>
+        <span className="hidden sm:inline">Viewed by: {watermarkText} | © JNU Study Circle - All Rights Reserved</span>
+        <span className="sm:hidden">Viewed by: {userProfile?.fullName || user?.email?.split('@')[0] || 'User'} | © JNU Study Circle</span>
       </div>
     </div>
   );

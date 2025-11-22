@@ -419,7 +419,7 @@ const Resources = () => {
                 </div>
                 <button
                   onClick={() => handleViewResource(resource)}
-                  className={`btn-primary text-sm ${!hasAccess && 'opacity-50 cursor-not-allowed'}`}
+                  className={`bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-6 rounded-lg transition-all duration-200 text-sm ${!hasAccess && 'opacity-50 cursor-not-allowed'}`}
                   disabled={!hasAccess}
                 >
                   View

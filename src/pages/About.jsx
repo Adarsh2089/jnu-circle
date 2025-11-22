@@ -29,8 +29,8 @@ export default function About() {
             </div>
             <h2 className="text-3xl font-bold text-gray-900">Our Mission</h2>
           </div>
-          <p className="text-lg text-gray-700 leading-relaxed">
-            JNU Circle was created to bridge the gap in accessing quality study materials across different 
+          <p className="text-xl text-gray-600 leading-relaxed">
+            JNU Study Circle was created to bridge the gap in accessing quality study materials across different
             schools and centres at Jawaharlal Nehru University. We believe that every student deserves equal 
             access to educational resources, regardless of their background or connections. By creating a 
             centralized platform, we're building a collaborative learning environment where students can share, 
@@ -225,7 +225,7 @@ export default function About() {
 
         {/* Call to Action */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-xl p-8 md:p-12 text-white text-center">
-          <h2 className="text-3xl font-bold mb-4">Join the JNU Circle Community</h2>
+          <h2 className="text-3xl font-bold mb-4">Join the JNU Study Circle Community</h2>
           <p className="text-xl mb-8 text-white/90">
             Be part of a growing community of students helping each other succeed academically.
           </p>
@@ -248,7 +248,7 @@ export default function About() {
         {/* Footer Note */}
         <div className="mt-12 text-center text-gray-600">
           <p>
-            JNU Circle is an independent student initiative and is not officially affiliated with 
+            JNU Study Circle is an independent student initiative and is not officially affiliated with 
             Jawaharlal Nehru University.
           </p>
         </div>

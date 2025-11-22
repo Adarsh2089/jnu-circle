@@ -25,8 +25,8 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <BookOpen className="h-8 w-8 text-primary-600" />
-              <span className="font-bold text-xl text-gray-900">JNU Circle</span>
+              <img src="/vite.svg" alt="JNU Study Circle Logo" className="h-12 w-12" />
+              <span className="font-bold text-xl text-gray-900">JNU Study Circle</span>
             </Link>
           </div>
 
@@ -36,51 +36,67 @@ const Navbar = () => {
               <>
                 {/* Show Home button if not on home page */}
                 {!isHomePage && (
-                  <Link to="/" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                  <Link to="/" className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                    location.pathname === '/' ? 'text-primary-600 font-semibold' : 'text-gray-700 hover:text-primary-600'
+                  }`}>
                     <Home className="h-4 w-4" />
                     <span>Home</span>
                   </Link>
                 )}
                 {/* Show Dashboard only if not on home page */}
                 {!isHomePage && (
-                  <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link to="/dashboard" className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/dashboard' ? 'text-primary-600 font-semibold' : 'text-gray-700 hover:text-primary-600'
+                  }`}>
                     Dashboard
                   </Link>
                 )}
                 {/* Admin Panel Links */}
                 {!isHomePage && isAdmin && (
-                  <Link to="/admin" className="text-primary-600 hover:text-primary-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                  <Link to="/admin" className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                    location.pathname === '/admin' ? 'text-primary-600 font-semibold' : 'text-primary-600 hover:text-primary-700'
+                  }`}>
                     <Shield className="h-4 w-4" />
                     <span>Admin Panel</span>
                   </Link>
                 )}
                 {!isHomePage && isSchoolAdmin && (
-                  <Link to="/school-admin" className="text-blue-600 hover:text-blue-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                  <Link to="/school-admin" className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                    location.pathname === '/school-admin' ? 'text-blue-600 font-semibold' : 'text-blue-600 hover:text-blue-700'
+                  }`}>
                     <Shield className="h-4 w-4" />
                     <span>School Admin</span>
                   </Link>
                 )}
                 {!isHomePage && isCentreAdmin && (
-                  <Link to="/centre-admin" className="text-indigo-600 hover:text-indigo-700 px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1">
+                  <Link to="/centre-admin" className={`px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-1 ${
+                    location.pathname === '/centre-admin' ? 'text-indigo-600 font-semibold' : 'text-indigo-600 hover:text-indigo-700'
+                  }`}>
                     <Shield className="h-4 w-4" />
                     <span>Centre Admin</span>
                   </Link>
                 )}
                 {/* Show Resources only if not on home page and not any admin */}
                 {!isHomePage && !isAdmin && !isSchoolAdmin && !isCentreAdmin && (
-                  <Link to="/resources" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link to="/resources" className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/resources' ? 'text-primary-600 font-semibold' : 'text-gray-700 hover:text-primary-600'
+                  }`}>
                     Resources
                   </Link>
                 )}
                 {/* Show Upload only if not on home page */}
                 {!isHomePage && (
-                  <Link to="/upload" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link to="/upload" className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/upload' ? 'text-primary-600 font-semibold' : 'text-gray-700 hover:text-primary-600'
+                  }`}>
                     Upload
                   </Link>
                 )}
                 {/* Show Profile only if not on home page and not any admin */}
                 {!isHomePage && !isAdmin && !isSchoolAdmin && !isCentreAdmin && (
-                  <Link to="/profile" className="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <Link to="/profile" className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/profile' ? 'text-primary-600 font-semibold' : 'text-gray-700 hover:text-primary-600'
+                  }`}>
                     Profile
                   </Link>
                 )}
@@ -97,7 +113,7 @@ const Navbar = () => {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 btn-secondary"
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
@@ -105,7 +121,7 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="btn-secondary">
+                <Link to="/login" className="bg-white hover:bg-gray-50 text-gray-800 font-semibold py-2 px-6 rounded-lg transition-all duration-200 border border-gray-300">
                   Login
                 </Link>
                 <Link to="/signup" className="btn-primary">

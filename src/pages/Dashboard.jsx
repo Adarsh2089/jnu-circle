@@ -18,6 +18,9 @@ const Dashboard = () => {
   const [loadingResources, setLoadingResources] = useState(true);
   const [selectedResource, setSelectedResource] = useState(null);
   const [showNominationForm, setShowNominationForm] = useState(false);
+  const [schoolAdmin, setSchoolAdmin] = useState(null);
+  const [centreAdmin, setCentreAdmin] = useState(null);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
 
   // Redirect admin to admin panel
   useEffect(() => {
@@ -25,6 +28,58 @@ const Dashboard = () => {
       navigate('/admin');
     }
   }, [isAdmin, navigate]);
+
+  // Fetch school and centre admins
+  useEffect(() => {
+    if (!userProfile?.school) return;
+    
+    const fetchAdmins = async () => {
+      try {
+        // Fetch school admin
+        const schoolAdminQuery = query(
+          collection(db, 'users'),
+          where('isSchoolAdmin', '==', true),
+          where('school', '==', userProfile.school)
+        );
+        const schoolAdminSnapshot = await getDocs(schoolAdminQuery);
+        if (!schoolAdminSnapshot.empty) {
+          const adminData = schoolAdminSnapshot.docs[0].data();
+          setSchoolAdmin({
+            name: adminData.fullName || adminData.name,
+            email: adminData.email,
+            school: adminData.school,
+            course: adminData.course
+          });
+        }
+
+        // Fetch centre admin if user has a centre
+        if (userProfile.centre) {
+          const centreAdminQuery = query(
+            collection(db, 'users'),
+            where('isCentreAdmin', '==', true),
+            where('school', '==', userProfile.school),
+            where('centre', '==', userProfile.centre)
+          );
+          const centreAdminSnapshot = await getDocs(centreAdminQuery);
+          if (!centreAdminSnapshot.empty) {
+            const adminData = centreAdminSnapshot.docs[0].data();
+            setCentreAdmin({
+              name: adminData.fullName || adminData.name,
+              email: adminData.email,
+              centre: adminData.centre,
+              course: adminData.course
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching admins:', error);
+      } finally {
+        setLoadingAdmins(false);
+      }
+    };
+
+    fetchAdmins();
+  }, [userProfile]);
 
   // Fetch recent approved resources from user's school
   useEffect(() => {
@@ -82,14 +137,14 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {userProfile?.fullName || 'Student'}!
-          </h1>
-          <p className="text-gray-600 mt-2">
-            {userProfile?.school}
-          </p>
-        </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome back, {userProfile?.fullName || 'Student'}!
+            </h1>
+            <p className="text-gray-600 mt-2">
+              {userProfile?.school}
+            </p>
+          </div>
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -152,7 +207,7 @@ const Dashboard = () => {
                   <Link to="/upload" className="btn-primary">
                     Upload Now
                   </Link>
-                  <Link to="/pricing" className="btn-secondary">
+                  <Link to="/payment" className="btn-secondary">
                     Get Premium
                   </Link>
                 </div>
@@ -222,7 +277,7 @@ const Dashboard = () => {
             </div>
           ) : recentResources.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentResources.map((resource) => (
+              {recentResources.slice(0, 6).map((resource) => (
                 <div key={resource.id} className="card hover:shadow-xl transition-shadow">
                   <div className="flex items-start justify-between mb-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -273,6 +328,92 @@ const Dashboard = () => {
         </div>
         </div>
       </div>
+
+        {/* Admin Contact Information - Only show to non-admin users */}
+        {!loadingAdmins && !hasAdminAccess && (schoolAdmin || centreAdmin) && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 mb-8">
+          <div className="relative overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg p-6 md:p-8 lg:p-10">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 md:h-40 md:w-40 rounded-full bg-white opacity-10"></div>
+            <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-40 w-40 md:h-48 md:w-48 rounded-full bg-white opacity-10"></div>
+            
+            <div className="relative">
+              {/* Responsive Layout - Stack on mobile, side by side on desktop */}
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-8">
+                {/* Left side - Icon and Text */}
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="bg-white bg-opacity-20 p-4 md:p-5 rounded-xl backdrop-blur-sm">
+                    <UserPlus className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-1">Need Help?</h3>
+                    <p className="text-white text-opacity-90 text-base md:text-lg">Contact Your Admin</p>
+                    <p className="text-blue-100 text-sm md:text-base mt-1">Get assistance from your school or centre representative</p>
+                  </div>
+                </div>
+
+                {/* Right side - Admin Details Cards */}
+                <div className="flex flex-col gap-4 w-full lg:w-auto lg:min-w-[450px]">
+                  {schoolAdmin && (
+                    <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-xl p-5 md:p-6 shadow-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 md:p-4 rounded-lg">
+                            <UserPlus className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs md:text-sm font-bold rounded-full mb-2">
+                            School Admin
+                          </span>
+                          <h4 className="text-lg md:text-xl font-bold text-gray-900 truncate">{schoolAdmin.name}</h4>
+                          <p className="text-xs md:text-sm text-gray-600 truncate">{schoolAdmin.school}</p>
+                          {schoolAdmin.course && (
+                            <p className="text-xs md:text-sm text-gray-500 mt-1 truncate">{schoolAdmin.course}</p>
+                          )}
+                          <a 
+                            href={`mailto:${schoolAdmin.email}`} 
+                            className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline mt-1 inline-block break-all"
+                          >
+                            {schoolAdmin.email}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {centreAdmin && (
+                    <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-xl p-5 md:p-6 shadow-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-3 md:p-4 rounded-lg">
+                            <UserPlus className="h-6 w-6 md:h-7 md:w-7 text-white" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 text-xs md:text-sm font-bold rounded-full mb-2">
+                            Centre Admin
+                          </span>
+                          <h4 className="text-lg md:text-xl font-bold text-gray-900 truncate">{centreAdmin.name}</h4>
+                          <p className="text-xs md:text-sm text-gray-600 truncate">{centreAdmin.centre}</p>
+                          {centreAdmin.course && (
+                            <p className="text-xs md:text-sm text-gray-500 mt-1 truncate">{centreAdmin.course}</p>
+                          )}
+                          <a 
+                            href={`mailto:${centreAdmin.email}`} 
+                            className="text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline mt-1 inline-block break-all"
+                          >
+                            {centreAdmin.email}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        )}
 
       {/* Minimal Footer */}
       <DashboardFooter />

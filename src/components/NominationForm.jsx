@@ -14,6 +14,7 @@ const NominationForm = ({ onClose }) => {
     reason: '',
     experience: '',
     commitment: '',
+    mobile: '',
     // For non-logged-in users
     name: '',
     email: '',
@@ -57,19 +58,6 @@ const NominationForm = ({ onClose }) => {
 
     try {
       // Validate
-      if (!user) {
-        // Non-logged-in user validations
-        if (!formData.name || formData.name.trim().length < 2) {
-          throw new Error('Please enter your full name');
-        }
-        if (!formData.email || !formData.email.includes('@')) {
-          throw new Error('Please enter a valid email address');
-        }
-        if (!formData.password || formData.password.length < 6) {
-          throw new Error('Password must be at least 6 characters');
-        }
-      }
-      
       if (!formData.nominationType) {
         throw new Error('Please select a nomination type');
       }
@@ -82,14 +70,21 @@ const NominationForm = ({ onClose }) => {
       if (!formData.reason || formData.reason.length < 50) {
         throw new Error('Please provide a detailed reason (at least 50 characters)');
       }
+      if (!formData.mobile || !/^[0-9]{10}$/.test(formData.mobile)) {
+        throw new Error('Please enter a valid 10-digit mobile number');
+      }
 
       // Submit nomination
-      await addDoc(collection(db, 'admin_nominations'), {
-        userId: user?.uid || 'pending_account',
-        userEmail: user?.email || formData.email,
-        userName: user ? (userProfile?.name || 'Unknown') : formData.name,
-        userSchool: user ? (userProfile?.school || '') : formData.school,
-        userCentre: user ? (userProfile?.centre || '') : (formData.centre || ''),
+      console.log('User Profile Data:', userProfile);
+      console.log('Full Name:', userProfile?.fullName);
+      
+      const nominationData = {
+        userId: user.uid,
+        userEmail: user.email,
+        userName: userProfile?.fullName || userProfile?.name || 'Unknown',
+        userMobile: formData.mobile,
+        userSchool: userProfile?.school || '',
+        userCentre: userProfile?.centre || '',
         nominationType: formData.nominationType,
         targetSchool: formData.school,
         targetCentre: formData.centre || null,
@@ -97,13 +92,14 @@ const NominationForm = ({ onClose }) => {
         experience: formData.experience,
         commitment: formData.commitment,
         status: 'pending',
-        accountCreated: !!user,
-        pendingPassword: user ? null : formData.password,
         createdAt: new Date().toISOString(),
         reviewedAt: null,
         reviewedBy: null,
         reviewNotes: ''
-      });
+      };
+      
+      console.log('Nomination Data being saved:', nominationData);
+      await addDoc(collection(db, 'admin_nominations'), nominationData);
 
       setSuccess(true);
       setTimeout(() => {
@@ -130,11 +126,51 @@ const NominationForm = ({ onClose }) => {
           <p className="text-gray-600">
             Your nomination has been submitted successfully. The admin team will review it shortly.
           </p>
-          {!user && (
-            <p className="text-sm text-blue-600 mt-3">
-              Check your email for account verification link.
-            </p>
-          )}
+          <button
+            onClick={onClose}
+            className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not logged in, show login prompt
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserPlus className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+            Account Required
+          </h3>
+          <p className="text-gray-600 mb-6">
+            You need to create an account and login first before submitting a nomination for admin role.
+          </p>
+          <div className="space-y-3">
+            <a
+              href="/signup"
+              className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all"
+            >
+              Create Account
+            </a>
+            <a
+              href="/login"
+              className="block w-full bg-white hover:bg-gray-50 text-gray-800 font-semibold py-3 px-4 rounded-lg border border-gray-300 transition-all"
+            >
+              Login
+            </a>
+            <button
+              onClick={onClose}
+              className="block w-full text-gray-600 hover:text-gray-800 py-2 text-sm"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -162,59 +198,6 @@ const NominationForm = ({ onClose }) => {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
               {error}
-            </div>
-          )}
-
-          {/* Account Creation Fields (if not logged in) */}
-          {!user && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-              <h3 className="font-semibold text-blue-900">Create Your Account</h3>
-              <p className="text-sm text-blue-700">You'll need an account to submit a nomination</p>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="your.email@mail.jnu.ac.in"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="Minimum 6 characters"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
             </div>
           )}
 
@@ -301,6 +284,27 @@ const NominationForm = ({ onClose }) => {
               </select>
             </div>
           )}
+
+          {/* Mobile Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Mobile Number *
+            </label>
+            <input
+              type="tel"
+              name="mobile"
+              value={formData.mobile}
+              onChange={handleChange}
+              required
+              placeholder="Enter your 10-digit mobile number"
+              pattern="[0-9]{10}"
+              maxLength="10"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              10-digit mobile number (e.g., 9876543210)
+            </p>
+          </div>
 
           {/* Reason */}
           <div>

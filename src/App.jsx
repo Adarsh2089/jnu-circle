@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Resources from './pages/Resources';
 import Upload from './pages/Upload';
 import Profile from './pages/Profile';
+import Payment from './pages/Payment';
 import AdminPanel from './pages/AdminPanel';
 import SchoolAdminPanel from './pages/SchoolAdminPanel';
 import CentreAdminPanel from './pages/CentreAdminPanel';
@@ -94,7 +95,7 @@ function AppContent() {
   const location = useLocation();
   
   // Routes that should NOT show the large footer (they have their own footer)
-  const dashboardRoutes = ['/dashboard', '/admin', '/school-admin', '/centre-admin', '/resources', '/upload', '/profile'];
+  const dashboardRoutes = ['/dashboard', '/admin', '/school-admin', '/centre-admin', '/resources', '/upload', '/profile', '/payment'];
   const showLargeFooter = !dashboardRoutes.includes(location.pathname);
 
   return (
@@ -123,6 +124,11 @@ function AppContent() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/payment" element={
+            <ProtectedRoute>
+              <Payment />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={

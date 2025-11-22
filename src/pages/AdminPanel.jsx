@@ -11,7 +11,7 @@ import { getAllSchools, getCoursesForSchool } from '../data/schoolCourseMapping'
 
 const AdminPanel = () => {
   // Tab state
-  const [activeTab, setActiveTab] = useState('content'); // 'content', 'users', 'requests', 'courses', or 'nominations'
+  const [activeTab, setActiveTab] = useState('content'); // 'content', 'users', 'requests', 'courses', 'nominations', or 'purchases'
   
   // Resources state
   const [resources, setResources] = useState([]);
@@ -48,6 +48,13 @@ const AdminPanel = () => {
   const [nominationFilterStatus, setNominationFilterStatus] = useState('pending'); // pending, approved, rejected
   const [nominationFilterType, setNominationFilterType] = useState('all'); // all, school, centre
   
+  // Purchases state
+  const [purchases, setPurchases] = useState([]);
+  const [filteredPurchases, setFilteredPurchases] = useState([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(true);
+  const [purchaseSearchTerm, setPurchaseSearchTerm] = useState('');
+  const [purchaseFilterStatus, setPurchaseFilterStatus] = useState('pending'); // pending, approved, rejected
+  
   const { isAdmin } = useAdmin();
   const navigate = useNavigate();
 
@@ -60,6 +67,7 @@ const AdminPanel = () => {
     fetchUsers();
     fetchCourseRequests();
     fetchNominations();
+    fetchPurchases();
   }, [isAdmin, navigate]);
 
   useEffect(() => {
@@ -77,6 +85,10 @@ const AdminPanel = () => {
   useEffect(() => {
     filterNominationResults();
   }, [nominations, nominationSearchTerm, nominationFilterStatus, nominationFilterType]);
+
+  useEffect(() => {
+    filterPurchaseResults();
+  }, [purchases, purchaseSearchTerm, purchaseFilterStatus]);
 
   const fetchResources = async () => {
     try {
@@ -163,6 +175,28 @@ const AdminPanel = () => {
       console.error('Error fetching nominations:', error);
     } finally {
       setNominationsLoading(false);
+    }
+  };
+
+  const fetchPurchases = async () => {
+    try {
+      setPurchasesLoading(true);
+      const q = query(
+        collection(db, 'user_purchase'),
+        orderBy('purchase_date', 'desc')
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const purchasesData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setPurchases(purchasesData);
+    } catch (error) {
+      console.error('Error fetching purchases:', error);
+    } finally {
+      setPurchasesLoading(false);
     }
   };
 
@@ -293,6 +327,26 @@ const AdminPanel = () => {
     }
 
     setFilteredNominations(filtered);
+  };
+
+  const filterPurchaseResults = () => {
+    let filtered = purchases;
+
+    // Status filter
+    if (purchaseFilterStatus !== 'all') {
+      filtered = filtered.filter(p => p.status === purchaseFilterStatus);
+    }
+
+    // Search filter
+    if (purchaseSearchTerm) {
+      filtered = filtered.filter(purchase =>
+        (purchase.txn_id && purchase.txn_id.toLowerCase().includes(purchaseSearchTerm.toLowerCase())) ||
+        (purchase.userName && purchase.userName.toLowerCase().includes(purchaseSearchTerm.toLowerCase())) ||
+        (purchase.userEmail && purchase.userEmail.toLowerCase().includes(purchaseSearchTerm.toLowerCase()))
+      );
+    }
+
+    setFilteredPurchases(filtered);
   };
 
   // State for schools and courses
@@ -466,19 +520,29 @@ const AdminPanel = () => {
 
           // Create user profile in Firestore
           const userRef = doc(db, 'users', userId);
-          await setDoc(userRef, {
+          const userData = {
             uid: userId,
             email: nomination.userEmail,
+            fullName: nomination.userName,
             name: nomination.userName,
             school: nomination.userSchool || nomination.targetSchool,
             centre: nomination.userCentre || nomination.targetCentre || '',
             role: nomination.nominationType === 'school' ? 'schoolAdmin' : 'centreAdmin',
             adminSchool: nomination.targetSchool,
-            adminCentre: nomination.nominationType === 'centre' ? nomination.targetCentre : '',
             accountType: 'free',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-          });
+          };
+
+          // Set the appropriate admin flag
+          if (nomination.nominationType === 'school') {
+            userData.isSchoolAdmin = true;
+          } else {
+            userData.isCentreAdmin = true;
+            userData.adminCentre = nomination.targetCentre;
+          }
+
+          await setDoc(userRef, userData);
 
           console.log('✅ Account created for:', nomination.userEmail);
         } catch (authError) {
@@ -498,7 +562,11 @@ const AdminPanel = () => {
           updatedAt: new Date().toISOString()
         };
         
-        if (nomination.nominationType === 'centre') {
+        // Set the appropriate admin flag
+        if (nomination.nominationType === 'school') {
+          roleUpdate.isSchoolAdmin = true;
+        } else {
+          roleUpdate.isCentreAdmin = true;
           roleUpdate.adminCentre = nomination.targetCentre;
         }
         
@@ -554,6 +622,90 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error deleting nomination:', error);
       alert('Failed to delete nomination');
+    }
+  };
+
+  const handleApprovePurchase = async (purchaseId) => {
+    const purchase = purchases.find(p => p.id === purchaseId);
+    if (!purchase) return;
+
+    if (!confirm(`Approve purchase from ${purchase.userName}?\nTransaction ID: ${purchase.txn_id}\nAmount: ₹${purchase.price}`)) return;
+
+    try {
+      // Update purchase status
+      const purchaseRef = doc(db, 'user_purchase', purchaseId);
+      await updateDoc(purchaseRef, {
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+        approvedBy: 'admin'
+      });
+
+      // Update user's premium status
+      const userRef = doc(db, 'users', purchase.user_id);
+      await updateDoc(userRef, {
+        isPremium: true,
+        hasPaid: true,
+        paidAt: new Date().toISOString(),
+        premiumExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year from now
+      });
+
+      alert('✅ Purchase approved! User now has premium access.');
+      fetchPurchases();
+      fetchUsers();
+    } catch (error) {
+      console.error('Error approving purchase:', error);
+      alert('Failed to approve purchase: ' + error.message);
+    }
+  };
+
+  const handleRejectPurchase = async (purchaseId) => {
+    const reason = prompt('Reason for rejection:');
+    if (reason === null) return;
+
+    try {
+      const purchaseRef = doc(db, 'user_purchase', purchaseId);
+      await updateDoc(purchaseRef, {
+        status: 'rejected',
+        rejectedAt: new Date().toISOString(),
+        rejectedBy: 'admin',
+        rejectionReason: reason || 'Invalid transaction'
+      });
+
+      alert('Purchase rejected');
+      fetchPurchases();
+    } catch (error) {
+      console.error('Error rejecting purchase:', error);
+      alert('Failed to reject purchase');
+    }
+  };
+
+  const handleDeletePurchase = async (purchaseId) => {
+    const purchase = purchases.find(p => p.id === purchaseId);
+    if (!purchase) return;
+
+    if (!confirm('Are you sure you want to delete this purchase record?\n\nThis will also remove premium access from the user if it was approved.')) return;
+
+    try {
+      // If purchase was approved, remove premium status from user
+      if (purchase.status === 'approved') {
+        const userRef = doc(db, 'users', purchase.user_id);
+        await updateDoc(userRef, {
+          isPremium: false,
+          hasPaid: false,
+          paidAt: null,
+          premiumExpiryDate: null
+        });
+      }
+
+      // Delete purchase record
+      await deleteDoc(doc(db, 'user_purchase', purchaseId));
+      
+      alert('Purchase deleted successfully');
+      fetchPurchases();
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting purchase:', error);
+      alert('Failed to delete purchase');
     }
   };
 
@@ -736,6 +888,17 @@ const AdminPanel = () => {
             >
               <UserPlus className="h-5 w-5" />
               <span>Nominations ({nominations.filter(n => n.status === 'pending').length})</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('purchases')}
+              className={`${
+                activeTab === 'purchases'
+                  ? 'border-primary-600 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } flex items-center space-x-2 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
+            >
+              <CheckCircle className="h-5 w-5" />
+              <span>Purchases ({purchases.filter(p => p.status === 'pending').length})</span>
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -1405,6 +1568,9 @@ const AdminPanel = () => {
                               {nomination.userName}
                             </h3>
                             <p className="text-sm text-gray-600">{nomination.userEmail}</p>
+                            {nomination.userMobile && (
+                              <p className="text-sm text-gray-600">📱 {nomination.userMobile}</p>
+                            )}
                           </div>
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(nomination.status)}`}>
                             {nomination.status.charAt(0).toUpperCase() + nomination.status.slice(1)}
@@ -1513,6 +1679,205 @@ const AdminPanel = () => {
                           </button>
                         </div>
                       )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Purchases Tab */}
+        {activeTab === 'purchases' && (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="card">
+                <p className="text-sm text-gray-600">Pending Verification</p>
+                <p className="text-3xl font-bold text-yellow-600">
+                  {purchases.filter(p => p.status === 'pending').length}
+                </p>
+              </div>
+              <div className="card">
+                <p className="text-sm text-gray-600">Approved</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {purchases.filter(p => p.status === 'approved').length}
+                </p>
+              </div>
+              <div className="card">
+                <p className="text-sm text-gray-600">Rejected</p>
+                <p className="text-3xl font-bold text-red-600">
+                  {purchases.filter(p => p.status === 'rejected').length}
+                </p>
+              </div>
+              <div className="card">
+                <p className="text-sm text-gray-600">Total Revenue</p>
+                <p className="text-3xl font-bold text-primary-600">
+                  ₹{purchases.filter(p => p.status === 'approved').reduce((sum, p) => sum + (p.price || 0), 0)}
+                </p>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="card mb-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="text"
+                      placeholder="Search by transaction ID, name, or email..."
+                      value={purchaseSearchTerm}
+                      onChange={(e) => setPurchaseSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPurchaseFilterStatus('pending')}
+                    className={`px-4 py-2 rounded-lg ${
+                      purchaseFilterStatus === 'pending'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    onClick={() => setPurchaseFilterStatus('approved')}
+                    className={`px-4 py-2 rounded-lg ${
+                      purchaseFilterStatus === 'approved'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Approved
+                  </button>
+                  <button
+                    onClick={() => setPurchaseFilterStatus('rejected')}
+                    className={`px-4 py-2 rounded-lg ${
+                      purchaseFilterStatus === 'rejected'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Rejected
+                  </button>
+                  <button
+                    onClick={() => setPurchaseFilterStatus('all')}
+                    className={`px-4 py-2 rounded-lg ${
+                      purchaseFilterStatus === 'all'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    All
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Purchases List */}
+            <div className="space-y-4">
+              {purchasesLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading purchases...</p>
+                </div>
+              ) : filteredPurchases.length === 0 ? (
+                <div className="card text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">No purchases found</p>
+                </div>
+              ) : (
+                filteredPurchases.map((purchase) => (
+                  <div key={purchase.id} className="card hover:shadow-lg transition-shadow">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {purchase.userName || 'Unknown User'}
+                            </h3>
+                            <p className="text-sm text-gray-600">{purchase.userEmail}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(purchase.status)}`}>
+                            {purchase.status?.charAt(0).toUpperCase() + purchase.status?.slice(1)}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-2 mb-3">
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700">Transaction ID:</span>{' '}
+                            <span className="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{purchase.txn_id}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700">Amount:</span>{' '}
+                            <span className="text-lg font-bold text-green-600">₹{purchase.price}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700">School:</span>{' '}
+                            <span className="text-gray-600">{purchase.userSchool || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-medium text-gray-700">Purchase Date:</span>{' '}
+                            <span className="text-gray-600">
+                              {purchase.purchase_date?.toDate 
+                                ? new Date(purchase.purchase_date.toDate()).toLocaleString() 
+                                : 'N/A'}
+                            </span>
+                          </div>
+                          {purchase.status === 'approved' && purchase.expiry_date && (
+                            <div className="text-sm">
+                              <span className="font-medium text-gray-700">Expires:</span>{' '}
+                              <span className="text-gray-600">
+                                {purchase.expiry_date?.toDate 
+                                  ? new Date(purchase.expiry_date.toDate()).toLocaleDateString() 
+                                  : 'N/A'}
+                              </span>
+                            </div>
+                          )}
+                          {purchase.status === 'rejected' && purchase.rejectionReason && (
+                            <div className="bg-red-50 rounded-lg p-3 mt-2">
+                              <p className="text-sm font-medium text-red-700 mb-1">Rejection Reason:</p>
+                              <p className="text-sm text-red-600">{purchase.rejectionReason}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex lg:flex-col gap-2">
+                        {purchase.status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApprovePurchase(purchase.id)}
+                              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                              title="Approve purchase"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => handleRejectPurchase(purchase.id)}
+                              className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                              title="Reject purchase"
+                            >
+                              <XCircle className="h-4 w-4" />
+                              <span>Reject</span>
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => handleDeletePurchase(purchase.id)}
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          title="Delete purchase"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

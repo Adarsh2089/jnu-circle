@@ -6,7 +6,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-bold mb-4">JNU Circle</h3>
+            <h3 className="text-2xl font-bold mb-4">JNU Study Circle</h3>
             <p className="text-gray-400 mb-4">
               A centralized platform for JNU students to access previous year questions, 
               notes, and study materials. Share knowledge, grow together.
@@ -43,7 +43,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} JNU Circle. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} JNU Study Circle. All rights reserved.</p>
           <p className="text-sm mt-2 text-gray-500">
             Made with ❤️ for JNU students
           </p>

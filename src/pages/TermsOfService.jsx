@@ -17,7 +17,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing and using JNU Circle ("the Platform"), you accept and agree to be bound by these 
+              By accessing and using JNU Study Circle ("the Platform"), you accept and agree to be bound by these 
               Terms of Service. If you do not agree to these terms, please do not use the Platform.
             </p>
           </section>
@@ -25,7 +25,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">2. Eligibility</h2>
             <p>
-              JNU Circle is exclusively for students, faculty, and staff of Jawaharlal Nehru University (JNU). 
+              JNU Study Circle is exclusively for students, faculty, and staff of Jawaharlal Nehru University (JNU). 
               You must have a valid JNU email address to register. By registering, you confirm that:
             </p>
             <ul className="list-disc pl-6 space-y-2">
@@ -106,14 +106,14 @@ export default function TermsOfService() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">6. Intellectual Property</h2>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Content</h3>
             <p>
-              You retain ownership of content you upload. By uploading, you grant JNU Circle a non-exclusive, 
+              You retain ownership of content you upload. By uploading, you grant JNU Study Circle a non-exclusive, 
               worldwide, royalty-free license to host, store, and display your content for the purpose of 
               operating the platform.
             </p>
 
             <h3 className="text-xl font-semibold text-gray-800 mb-2 mt-4">Platform Content</h3>
             <p>
-              All platform features, design, code, and branding are owned by JNU Circle and protected by 
+              All platform features, design, code, and branding are owned by JNU Study Circle and protected by 
               copyright and intellectual property laws.
             </p>
 
@@ -167,7 +167,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">10. Advertising</h2>
             <p>
-              JNU Circle uses Google AdSense to display advertisements. By using the platform:
+              JNU Study Circle uses Google AdSense to display advertisements. By using the platform:
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>You consent to viewing advertisements</li>
@@ -180,7 +180,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">11. Disclaimer of Warranties</h2>
             <p>
-              JNU Circle is provided "AS IS" without warranties of any kind. We do not guarantee:
+              JNU Study Circle is provided "AS IS" without warranties of any kind. We do not guarantee:
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>Uninterrupted or error-free service</li>
@@ -193,7 +193,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">12. Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, JNU Circle shall not be liable for any indirect, 
+              To the maximum extent permitted by law, JNU Study Circle shall not be liable for any indirect, 
               incidental, special, consequential, or punitive damages arising from your use of the platform, 
               including but not limited to loss of data, revenue, or academic performance.
             </p>
@@ -202,7 +202,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">13. Indemnification</h2>
             <p>
-              You agree to indemnify and hold harmless JNU Circle from any claims, damages, or expenses 
+              You agree to indemnify and hold harmless JNU Study Circle from any claims, damages, or expenses 
               arising from your violation of these terms or misuse of the platform.
             </p>
           </section>
@@ -254,7 +254,7 @@ export default function TermsOfService() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">19. Entire Agreement</h2>
             <p>
               These Terms of Service, along with our Privacy Policy, constitute the entire agreement between 
-              you and JNU Circle regarding the use of the platform.
+              you and JNU Study Circle regarding the use of the platform.
             </p>
           </section>
         </div>

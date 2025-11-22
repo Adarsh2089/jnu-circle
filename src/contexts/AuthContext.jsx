@@ -74,8 +74,19 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
-  const resetPassword = (email) => {
-    return sendPasswordResetEmail(auth, email);
+  const resetPassword = async (email) => {
+    try {
+      console.log('AuthContext: Sending password reset email to:', email);
+      await sendPasswordResetEmail(auth, email, {
+        url: window.location.origin + '/login',
+        handleCodeInApp: false
+      });
+      console.log('AuthContext: Password reset email sent successfully');
+      return true;
+    } catch (error) {
+      console.error('AuthContext: Error sending password reset email:', error);
+      throw error;
+    }
   };
 
   const value = {

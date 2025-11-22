@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">1. Introduction</h2>
             <p>
-              Welcome to JNU Circle ("we," "our," or "us"). We are committed to protecting your personal information 
+              Welcome to JNU Study Circle ("we," "our," or "us"). We are committed to protecting your personal information 
               and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard 
               your information when you visit our website jnucircle.app and use our services.
             </p>
@@ -136,7 +136,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">10. Children's Privacy</h2>
             <p>
-              JNU Circle is intended for university students (18+ years). We do not knowingly collect information 
+              JNU Study Circle is intended for university students (18+ years). We do not knowingly collect information 
               from children under 18. If you believe we have collected such information, please contact us immediately.
             </p>
           </section>
@@ -172,7 +172,7 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-2xl font-semibold text-gray-900 mb-3">14. Consent</h2>
             <p>
-              By using JNU Circle, you consent to this Privacy Policy and agree to its terms. If you do not agree 
+              By using JNU Study Circle, you consent to this Privacy Policy and agree to its terms. If you do not agree 
               with this policy, please do not use our services.
             </p>
           </section>

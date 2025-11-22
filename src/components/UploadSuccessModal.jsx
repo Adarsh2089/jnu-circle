@@ -22,7 +22,7 @@ const UploadSuccessModal = ({ onClose, onViewDashboard }) => {
             Upload Successful! 🎉
           </h2>
           <p className="text-gray-600">
-            Thank you for contributing to JNU Circle
+            Thank you for contributing to JNU Study Circle
           </p>
         </div>
 

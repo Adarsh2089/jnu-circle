@@ -1,10 +1,10 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
-import { User, Mail, GraduationCap, Calendar, Award, Upload as UploadIcon, Edit2, Save, X, TrendingUp, Target } from 'lucide-react';
+import { User, Mail, GraduationCap, Calendar, Award, Upload as UploadIcon, Edit2, Save, X, TrendingUp, Target, CreditCard, CheckCircle, Clock, XCircle } from 'lucide-react';
 import CourseRequestModal from '../components/CourseRequestModal';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import DashboardFooter from '../components/DashboardFooter';
 
@@ -36,6 +36,10 @@ const Profile = () => {
   const [availableCentres, setAvailableCentres] = useState([]);
   const [availableCourses, setAvailableCourses] = useState([]);
   const [showCourseRequestModal, setShowCourseRequestModal] = useState(false);
+  
+  // Purchase state
+  const [purchases, setPurchases] = useState([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(true);
 
   // Redirect admin to admin panel
   useEffect(() => {
@@ -43,6 +47,47 @@ const Profile = () => {
       navigate('/admin');
     }
   }, [isAdmin, navigate]);
+
+  // Fetch user purchases
+  useEffect(() => {
+    const fetchPurchases = async () => {
+      if (!user) return;
+      
+      try {
+        console.log('Fetching purchases for user:', user.uid);
+        const q = query(
+          collection(db, 'user_purchase'),
+          where('user_id', '==', user.uid)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        console.log('Found purchases:', querySnapshot.size);
+        const purchasesData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('Purchase data:', data);
+          return {
+            id: doc.id,
+            ...data
+          };
+        });
+        
+        // Sort by purchase_date in memory (descending)
+        purchasesData.sort((a, b) => {
+          const dateA = a.purchase_date?.toDate?.() || new Date(0);
+          const dateB = b.purchase_date?.toDate?.() || new Date(0);
+          return dateB - dateA;
+        });
+        
+        setPurchases(purchasesData);
+      } catch (error) {
+        console.error('Error fetching purchases:', error);
+      } finally {
+        setLoadingPurchases(false);
+      }
+    };
+
+    fetchPurchases();
+  }, [user]);
 
   // Initialize edited profile when userProfile loads
   useEffect(() => {
@@ -440,8 +485,93 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Upgrade to Premium (only if not premium) */}
-        {!userProfile?.isPremium && (
+        {/* Purchase Details */}
+        <div className="card mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <CreditCard className="h-6 w-6 text-blue-600" />
+              <h3 className="text-xl font-semibold text-gray-900">Payment History</h3>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+              >
+                Refresh
+              </button>
+              {!userProfile?.isPremium && (
+                <Link 
+                  to="/payment" 
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
+                >
+                  Get Premium
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {loadingPurchases ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+          ) : purchases.length > 0 ? (
+            <div className="space-y-4">
+              {purchases.map((purchase) => (
+                <div 
+                  key={purchase.id} 
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-lg font-semibold text-gray-900">₹{purchase.price}</span>
+                        {purchase.status === 'approved' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Approved
+                          </span>
+                        )}
+                        {purchase.status === 'pending' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </span>
+                        )}
+                        {purchase.status === 'rejected' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Rejected
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>Transaction ID: <span className="font-mono font-medium text-gray-900">{purchase.txn_id}</span></p>
+                        <p>Purchase Date: {purchase.purchase_date?.toDate ? new Date(purchase.purchase_date.toDate()).toLocaleDateString() : 'N/A'}</p>
+                        {purchase.status === 'approved' && purchase.expiry_date && (
+                          <p>Expires: {purchase.expiry_date?.toDate ? new Date(purchase.expiry_date.toDate()).toLocaleDateString() : 'N/A'}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 mb-4">No payment history yet</p>
+              <Link 
+                to="/payment" 
+                className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              >
+                Get Premium Access for ₹99/year
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Upgrade to Premium (only if not premium and no pending purchases) */}
+        {!userProfile?.isPremium && !purchases.some(p => p.status === 'pending') && purchases.length === 0 && (
           <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 mb-6">
             <div className="flex items-start space-x-4">
               <Award className="h-8 w-8 text-yellow-600 mt-1" />
@@ -452,7 +582,7 @@ const Profile = () => {
                 <p className="text-yellow-700 mb-4">
                   Get unlimited access to all resources for just ₹99/year
                 </p>
-                <Link to="/pricing" className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
+                <Link to="/payment" className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium">
                   Get Premium Access
                 </Link>
               </div>
