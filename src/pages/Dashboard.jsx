@@ -201,7 +201,7 @@ const Dashboard = () => {
                 </p>
                 <ul className="mt-2 text-yellow-700 list-disc list-inside">
                   <li>Upload at least one PYQ or study material</li>
-                  <li>Subscribe to Premium for ₹99/year</li>
+                  <li>Subscribe to Premium for ₹1/year</li>
                 </ul>
                 <div className="mt-4 flex gap-4">
                   <Link to="/upload" className="btn-primary">

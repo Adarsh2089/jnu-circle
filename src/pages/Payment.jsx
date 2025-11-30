@@ -35,7 +35,7 @@ const Payment = () => {
       await addDoc(collection(db, 'user_purchase'), {
         user_id: user.uid,
         txn_id: txnId.trim(),
-        price: 99,
+        price: 1,
         purchase_date: serverTimestamp(),
         expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
         status: 'pending', // pending, approved, rejected
@@ -104,7 +104,7 @@ const Payment = () => {
             <div className="space-y-3 bg-blue-50 rounded-lg p-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 font-medium">Amount:</span>
-                <span className="text-2xl font-bold text-blue-600">₹99</span>
+                <span className="text-2xl font-bold text-blue-600">₹1</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">Validity:</span>

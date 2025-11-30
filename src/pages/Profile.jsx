@@ -564,7 +564,7 @@ const Profile = () => {
                 to="/payment" 
                 className="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
               >
-                Get Premium Access for ₹99/year
+                Get Premium Access for ₹1/year
               </Link>
             </div>
           )}

@@ -125,7 +125,7 @@ const Home = () => {
               </div>
               <h3 className="text-xl font-semibold mb-3">Contribute or Subscribe</h3>
               <p className="text-gray-600">
-                Upload at least one resource or get premium access for ₹99/year.
+                Upload at least one resource or get premium access for ₹1/year.
               </p>
             </div>
 
@@ -268,7 +268,7 @@ const Home = () => {
                 <Star className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
                 <h3 className="text-2xl font-semibold mb-4">Premium</h3>
                 <p className="text-4xl font-bold text-blue-600 mb-4">
-                  ₹99<span className="text-lg text-gray-600">/year</span>
+                  ₹1<span className="text-lg text-gray-600">/year</span>
                 </p>
                 <p className="text-gray-600 mb-6">
                   Get instant access without uploading anything
@@ -296,7 +296,7 @@ const Home = () => {
                   onClick={handleGetStarted}
                   className="btn-primary w-full"
                 >
-                  Get Premium
+                  Get Premium Contribute Towards Community
                 </Link>
               </div>
             </div>
