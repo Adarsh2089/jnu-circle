@@ -78,10 +78,13 @@ const Payment = () => {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            Get Premium Access
+            Get Premium Access 
           </h1>
           <p className="text-gray-600">
             Scan QR code and complete payment to unlock all features
+          </p>
+           <p className="text-gray-600">
+            Note - All the Contribution Amount is for Site Maintenance Purpose only No Any individual is involve.
           </p>
         </div>
 
