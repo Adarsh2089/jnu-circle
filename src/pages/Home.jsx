@@ -296,7 +296,7 @@ const Home = () => {
                   onClick={handleGetStarted}
                   className="btn-primary w-full"
                 >
-                  Get Premium Contribute Towards Community
+                  Contribute to Community
                 </Link>
               </div>
             </div>
